@@ -1,0 +1,6 @@
+**/build
+**/devel
+**/cmake-build-debug
+**/.idea
+.vscode/
+.catkin_tools/
