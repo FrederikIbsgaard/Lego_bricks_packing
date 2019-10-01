@@ -57,6 +57,7 @@ Possible problems:
 
 * [ERROR 1819 (HY000): Your password does not satisfy the current policy requirements]
 ```bash
+ # open mysql prompt:
  sudo mysql -u root -p
  # in the mysql prompt:
  uninstall plugin validate_password
