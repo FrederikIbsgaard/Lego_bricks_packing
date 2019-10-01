@@ -24,7 +24,7 @@ Accessing mysql prompt
 ```bash
  sudo mysql -u root -p 
 ```
-Create new database:
+Create new database (mysql prompt):
 ```
 CREATE DATABASE rsd2018
 ```
@@ -32,7 +32,7 @@ CREATE DATABASE rsd2018
 ```bash
  sudo mysql -u root -p rsd2018 < ~/catkin_ws/src/Lego_bricks_packing/scripts/MES/db_export.sql
 ```
-In the mysql prompt, create user:
+Create new user (mysql prompt):
 ```
 use rsd2018
 CREATE USER 'rsd'@'localhost';
