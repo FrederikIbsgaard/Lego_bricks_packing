@@ -2,8 +2,6 @@
 import requests
 import json
 
-# THIS IS A COMMENT MADE BY SUNE
-
 
 def get_orders():
     # Get orders and create a list of id's and their status
@@ -62,6 +60,13 @@ def reserve_order(id):
         return data['ticket']
 
 
+def get_order_info(id, order_data):
+    print("Order:", id, "----------------")
+    print("blue:", order_data['blue'])
+    print("red:", order_data['red'])
+    print("yellow:", order_data['yellow'])
+
+
 def delete_order(id, ticket):
     # Delete the order with the given ticket
     response = requests.delete(HOST + '/orders/' + str(id) + '/' + str(ticket))
@@ -105,14 +110,7 @@ if True:
             if ticket is not None:
                 for i in range(len(orders_data)):
                     if orders_data[i]['id'] == id:
-                        print("Order:", id, "----------------")
-                        print("blue:", orders_data[i]['blue'])
-                        print("red:", orders_data[i]['red'])
-                        print("yellow:", orders_data[i]['yellow'])
+                        get_order_info(id, orders_data[i])
                         break
                 delete_order(id, ticket)
             print("-------------------------------")
-        # response = requests.post(HOST + '/log', json={'cell_id':8, 'event':'PML_Idle', 'comment':'testing log'})
-        # data = json.loads(response.text)
-        # print(response.status_code)
-        # print(data)
