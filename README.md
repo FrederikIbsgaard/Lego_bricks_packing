@@ -20,14 +20,21 @@ To see the current databases:
 ```bash
 sudo mysqlshow -u root -p 
 ```
-Accessing mysql prompt while importing the database structure (obtained from blackboard):
+Accessing mysql prompt
+```bash
+ sudo mysql -u root -p 
+```
+Create new database:
+```
+CREATE DATABASE rsd2018
+```
+ Importing the database structure (obtained from blackboard):
 ```bash
  sudo mysql -u root -p rsd2018 < ~/catkin_ws/src/Lego_bricks_packing/scripts/MES/db_export.sql
 ```
-In the prompt, create user:
+In the mysql prompt, create user:
 ```
 use rsd2018
-CREATE DATABASE rsd2018
 CREATE USER 'rsd'@'localhost';
 GRANT ALL PRIVILEGES ON rsd2018.* TO 'rsd'@'localhost' IDENTIFIED BY 'rsd2018';
 #source  ~/catkin_ws/src/Lego_bricks_packing/scripts/MES/db_export.sql
