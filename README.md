@@ -48,7 +48,12 @@ python3 ~/catkin_ws/src/Lego_bricks_packing/scripts/MES/ordering_client.py
 ```
 Possible problems:
 
-ERROR 1819 (HY000): Your password does not satisfy the current policy requirements
+*ERROR 1819 (HY000): Your password does not satisfy the current policy requirements
+```bash
+ sudo mysql -u root -p
+ # in the mysql prompt:
+ uninstall plugin validate_password
+```
 
 
 
