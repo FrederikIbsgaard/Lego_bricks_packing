@@ -28,8 +28,9 @@ if state == utils.SUCCESS:
     state, configuration = utils.getConfigurationValues(
         args["option"], args["conf"])
 
-    # copying the image
+    # converting to HSV
     rgb = image.copy()
+    hsv = cv2.cvtColor(rgb, cv2.COLOR_BGR2HSV)
 
     # Normal masking algorithm
     lower_bound = np.array(
@@ -38,9 +39,11 @@ if state == utils.SUCCESS:
         [configuration[1], configuration[3], configuration[5]])
 
     # Construct mask
-    mask = cv2.inRange(rgb, lower_bound, upper_bound)
-    output = cv2.bitwise_and(rgb, image, mask=mask)
+    mask = cv2.inRange(hsv, lower_bound, upper_bound)
+    output = cv2.bitwise_and(image, image, mask=mask)
 
+    # Convert output image to hsv space to be able to compare with the threshold values
+    output = cv2.cvtColor(output, cv2.COLOR_BGR2HSV)
     valid_points = np.array([0, 0, 0])
     for points in output:
         #print(points)
@@ -69,6 +72,9 @@ if state == utils.SUCCESS:
     else:
 
         print("INFO: predominant color  doesn't match: " + args["option"])
+
+    # Convert output image to bgr to be able to show it in the same colorspace as the input image
+    output = cv2.cvtColor(output, cv2.COLOR_HSV2BGR)
 
     # show the images
     cv2.imshow("Result of applying color segmentation",

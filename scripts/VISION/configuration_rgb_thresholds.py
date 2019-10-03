@@ -8,7 +8,7 @@
 # Instructions:
 # Run with: python3 configuration_rgb_thresholds.py 
 #           -i input_image.jpg 
-#           -o r  # r for red color filtering ,g for green and b for blue
+#           -o r  # red,green or yellow for color filtering 
 #           -c RGB_configuration values
  
 # import the necessary packages

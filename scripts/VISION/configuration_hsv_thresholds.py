@@ -8,7 +8,7 @@
 # Instructions:
 # Run with: python3 configuration_hsv_thresholds.py 
 #           -i input_image.jpg 
-#           -o r  # r for red color filtering ,g for green and b for blue
+#           -o r  # red,green or yellow for color filtering 
 #           -c HSV_configuration values
 
 # import the necessary packages
