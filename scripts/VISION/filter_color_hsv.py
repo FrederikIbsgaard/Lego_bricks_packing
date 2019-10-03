@@ -75,7 +75,10 @@ if state == utils.SUCCESS:
 
     # Convert output image to bgr to be able to show it in the same colorspace as the input image
     output = cv2.cvtColor(output, cv2.COLOR_HSV2BGR)
-
+    
+    # save result image:
+    utils.saveImage(output,args["filename_output"])
+    
     # show the images
     cv2.imshow("Result of applying color segmentation",
                np.hstack([image, output]))

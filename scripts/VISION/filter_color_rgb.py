@@ -70,6 +70,9 @@ if state == utils.SUCCESS:
 
         print("INFO: predominant color  doesn't match: " + args["option"])
 
+    # save result image:
+    utils.saveImage(output,args["filename_output"])
+
     # show the images
     cv2.imshow("Result of applying color segmentation",
                np.hstack([image, output]))
