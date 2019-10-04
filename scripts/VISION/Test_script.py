@@ -4,7 +4,7 @@ interpreter = "python" #python3
 image = "images/lego"
 
 # Select cropping limits:
-os.system(interpreter + "  filter_crop.py -i " + image + " -f images/result_cropped -c conf_files/Cropping_values")
+os.system(interpreter + "  src/filter_crop.py -i " + image + " -f images/result_cropped -c conf_files/Cropping_values")
 
 image = "images/result_cropped"
 # With RGB color segmentation:
