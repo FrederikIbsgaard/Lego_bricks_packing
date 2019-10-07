@@ -1,0 +1,11 @@
+.vscode
+__pycache__
+.pytest_cache
+
+images/result_blue_hsv.jpg
+images/result_yellow_hsv.jpg
+images/result_red_hsv.jpg
+images/result_blue_rgb.jpg
+images/result_yellow_rgb.jpg
+images/result_red_rgb.jpg
+images/result_cropped.jpg
