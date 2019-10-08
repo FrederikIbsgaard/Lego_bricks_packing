@@ -33,37 +33,50 @@
 #
 # Revision $Id$
 
-## Simple talker demo that listens to std_msgs/Strings published 
-## to the 'chatter' topic
+# Simple talker demo that listens to std_msgs/Strings published
+# to the 'chatter' topic
 
 import rospy
 import cv2
 from std_msgs.msg import String
 import utilities as utilities
+import os
+
+
+# Path to configuration files
+utilities.setPathsToConfigurationFiles("~/catkin_ws/src/Lego_bricks_packing/src/vision/conf/Cropping_values.json",
+                                       "~/catkin_ws/src/Lego_bricks_packing/src/vision/conf/HSV_thresholds.json",
+                                       "~/catkin_ws/src/Lego_bricks_packing/src/vision/conf/RGB_thresholds.json")
+
 
 def callback(data):
     rospy.loginfo(rospy.get_caller_id() + 'I heard %s', data.data)
+    # Adquire image
+    state, image = utilities.loadImage("lego")
+
+    rate = rospy.Rate(0.5) # 10hz
+    # Check that the input image exist
+    if state == utilities.SUCCESS:
+        output = utilities.cropImage(image)  
+        color = utilities.getColor(output,utilities.HSV)
+        print("INFO: (HSV) predominant color matches: " + color)
+        color = utilities.getColor(output,utilities.RGB)
+        print("INFO: (RGB) predominant color matches: " + color)  
+
+        # revise if this is the proper way
+        pub = rospy.Publisher('vision_response', String, queue_size=10)
+        pub.publish(color)
 
 def listener():
 
     # Initialize node
-    rospy.init_node('listener', anonymous=True)
-    rospy.Subscriber('chatter', String, callback)
-
-    # Adquire image
-    state,image = utilities.loadImage("lego")
-
-    # Check that the input image exist
-    if state == utilities.SUCCESS:
-        cv2.imshow("Input image", image)
-        #output = utilities.cropImage(image,"~/catkin_ws/src/Lego_bricks_packing/src/vision/conf/Cropping_values.json");
-        #cv2.imshow("Cropped image", image)
-        cv2.waitKey(0)      
-        
+    pub = rospy.Publisher('vision_respone', String, queue_size=10)
+    rospy.init_node('brick_color_detector', anonymous=True)
+    rospy.Subscriber('vision_request', String, callback)      
 
     # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
 
+
 if __name__ == '__main__':
     listener()
-   

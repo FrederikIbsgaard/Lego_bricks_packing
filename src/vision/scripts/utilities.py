@@ -7,11 +7,30 @@ import os
 
 NULL_STR = ""
 NULL_JSON = "{}"
-UNKNOWN_EXTENSION = "Unknown extension"
-UNKNOWN_FILE = "Unknown file"
-INVALID_OPTION = "The option introduced is invalid"
+VALID_COLORS = ["red","yellow","blue"]
+UNKNOWN_EXTENSION = "ERROR: The extension given to the file is not valid. "
+UNKNOWN_FILE = "ERROR: Unknown file, the requested file can't be found in the intoduced path. "
+INVALID_COLOR_OPTION = "ERROR: the introduced option is not valid, please introduce a valid option: red,yellow,blue. "
+INVALID_COLORSPACE_OPTION = "ERROR: Please introduce a valid option, either RGB or HSV. "
 EMPTY_FILE = "The file is empty"
 SUCCESS = "operation completed"
+RGB = "RGB"
+HSV = "HSV"
+
+# Path to configuration files
+PATH_TO_CONF_CROPPING_JSON = os.path.expanduser(
+    "~/catkin_ws/src/Lego_bricks_packing/src/vision/conf/Cropping_values.json")
+PATH_TO_CONF_HSV_JSON = os.path.expanduser(
+    "~/catkin_ws/src/Lego_bricks_packing/src/vision/conf/HSV_thresholds.json")
+PATH_TO_CONF_RGB_JSON = os.path.expanduser(
+    "~/catkin_ws/src/Lego_bricks_packing/src/vision/conf/RGB_thresholds.json")
+
+
+def setPathsToConfigurationFiles(path_to_cropping_conf, path_to_hsv_conf, path_to_rgb_conf):
+    # Path to configuration files
+    PATH_TO_CONF_CROPPING_JSON = os.path.expanduser(path_to_cropping_conf)
+    PATH_TO_CONF_HSV_JSON = os.path.expanduser(path_to_hsv_conf)
+    PATH_TO_CONF_RGB_JSON = os.path.expanduser(path_to_rgb_conf)
 
 
 def addPaddingToMatchSize(roi, image_to_match):
@@ -78,8 +97,7 @@ def loadJson(filename):
                     # as a string:
                     obj = json.loads(data)
 
-                    print("INFO: Json file  [ " +
-                          filename + " ] loaded correctly")
+                    #print("INFO: Json file  [ " + filename + " ] loaded correctly")
                     return SUCCESS, obj
         else:
             print(
@@ -94,6 +112,7 @@ def loadJson(filename):
             # save Json:
             saveJson(obj_json, filename)
 
+            print(UNKNOWN_FILE)
             return UNKNOWN_FILE, obj_json
 
 
@@ -110,7 +129,7 @@ def saveJson(json_obj, filename):
             "ERROR: The extension given to the file is not valid [ " + filename + " ], expected .json")
         return UNKNOWN_EXTENSION
     else:
-        generateFile(json_obj, ("./"+filename))
+        generateFile(json_obj, filename)
         print("INFO: Json file saved correctly")
         return SUCCESS
 
@@ -134,7 +153,7 @@ def loadImage(name):
             print("INFO: Image file [ " + filename + " ] loaded correctly")
             return SUCCESS, cv2.imread(filename)
         else:
-            print("ERROR: Couldn't find the image [ " + filename + " ]")
+            print(UNKNOWN_FILE + " [ " + filename + " ]")
             return UNKNOWN_FILE, NULL_STR
 
 # This function saves the content of a cv2 mat into an image.
@@ -148,8 +167,7 @@ def saveImage(image, name):
         filename = checkFilename(name, ".png")
 
     if filename == UNKNOWN_EXTENSION:
-        print(
-            "ERROR: The extension given to the file is not valid [ " + filename + " ], expected .jpg or .png")
+        print(UNKNOWN_EXTENSION  + " [ " + filename + " ], expected .jpg or .png")
         return UNKNOWN_EXTENSION
 
     else:
@@ -159,13 +177,23 @@ def saveImage(image, name):
         return SUCCESS
 
 
-def updateColorConfigurationJson(key, values, filename):
+def updateColorConfigurationJson(key, values, option):
 
     if key == "red" or key == "yellow" or key == "blue":
 
         print("INFO: Updating the Json file")
+        
         # load json
-        state, obj_json = loadJson(filename)
+        state = []
+        configuration  = []
+
+        if option == RGB:
+            state, obj_json = loadJson(PATH_TO_CONF_RGB_JSON)
+        elif option == HSV:
+            state, obj_json = loadJson(PATH_TO_CONF_HSV_JSON)
+        else:
+            print(INVALID_COLORSPACE_OPTION)
+        
 
         if state == SUCCESS:
 
@@ -181,14 +209,24 @@ def updateColorConfigurationJson(key, values, filename):
             saveJson(obj_json, filename)
 
     else:
-        print("ERROR: the introduced option is not valid, please introduce a valid option: r,g,b")
+        print(INVALID_COLOR_OPTION)
 
 
-def getConfigurationValues(key, filename):
+def getConfigurationValues(key, option):
 
     if key == "red" or key == "yellow" or key == "blue":
+
         # load json
-        state, obj_json = loadJson(filename)
+        state = []
+        configuration  = []
+
+        if option == RGB:
+            state, obj_json = loadJson(PATH_TO_CONF_RGB_JSON)
+        elif option == HSV:
+            state, obj_json = loadJson(PATH_TO_CONF_HSV_JSON)
+        else:
+            print(INVALID_COLORSPACE_OPTION) 
+            return INVALID_COLORSPACE_OPTION, []
 
         if state == SUCCESS:
             configuration = np.array([obj_json[key][0], obj_json[key][1], obj_json[key]
@@ -196,20 +234,151 @@ def getConfigurationValues(key, filename):
             return SUCCESS, configuration
         else:
             return state, []
-
     else:
-        print("ERROR: the introduced option is not valid, please introduce a valid option: r,g,b")
-        return INVALID_OPTION, []
+        return INVALID_COLOR_OPTION, []
 
 
-def cropImage(image, path_to_conf_file):
+def cropImage(image):
 
     # load Json file:
-    state, obj_json = loadJson(path_to_conf_file)
+    state, obj_json = loadJson(PATH_TO_CONF_CROPPING_JSON)
 
     if state == SUCCESS:
 
         # crop image using the Json information:
-        output = image[obj_json["Corner1"][0]:obj_json["Corner2"][0], obj_json["Corner1"][1]:obj_json["Corner2"][1]]
+        output = image[obj_json["Corner1"][0]:obj_json["Corner2"]
+                       [0], obj_json["Corner1"][1]:obj_json["Corner2"][1]]
         return output
+
+
+def filterHSV(image, color):
+
+    # Get previous configuration values:
+    state, configuration = getConfigurationValues(
+        color, HSV)
+
+    # converting to HSV
+    rgb = image.copy()
+    hsv = cv2.cvtColor(rgb, cv2.COLOR_BGR2HSV)
+
+    # Normal masking algorithm
+    lower_bound = np.array(
+        [configuration[0], configuration[2], configuration[4]])
+    upper_bound = np.array(
+        [configuration[1], configuration[3], configuration[5]])
+
+    # Construct mask
+    mask = cv2.inRange(hsv, lower_bound, upper_bound)
+    output = cv2.bitwise_and(image, image, mask=mask)
+
+    return output
+
+
+def filterRGB(image, color):
+
+    # Get previous configuration values:
+    state, configuration = getConfigurationValues(
+        color, RGB)
+
+    # copying the image
+    rgb = image.copy()
+
+    # Normal masking algorithm
+    lower_bound = np.array(
+        [configuration[0], configuration[2], configuration[4]])
+    upper_bound = np.array(
+        [configuration[1], configuration[3], configuration[5]])
+
+    # Construct mask
+    mask = cv2.inRange(rgb, lower_bound, upper_bound)
+    output = cv2.bitwise_and(rgb, image, mask=mask)
+
+    return output
+
+
+def getColor(image, option):
+    
+    for color in VALID_COLORS:
+
+        state = [] 
+        configuration  = []
+        filtered_image = []
+
+        if option == RGB:
+            state, configuration = getConfigurationValues(color,RGB)
+            filtered_image  = filterRGB(image,color)
+        elif option == HSV:
+            state, configuration = getConfigurationValues(color,HSV)
+            filtered_image  = filterHSV(image,color)
+        else:
+            return INVALID_COLORSPACE_OPTION
+
+        lower_bound = np.array(
+            [configuration[0], configuration[2], configuration[4]])
+        upper_bound = np.array(
+            [configuration[1], configuration[3], configuration[5]])
+
         
+        avg = getAverageColor(filtered_image, option)
+
+        if avg[0] >= configuration[0] and avg[0] <= configuration[1] and avg[1] >= configuration[2] and avg[1] <= configuration[3] and avg[2] >= configuration[4] and avg[2] <= configuration[5]:
+
+            #print("INFO: Threshold and currrent values")
+            #print("\tcurrent = " + str(int(avg[0])) + " Threshold values [" + str(configuration[0]) + " , " + str(configuration[1]) + "]")
+            #print("\tcurrent = " + str(int(avg[1])) + " Threshold values [" + str(configuration[2]) + " , " + str(configuration[3]) + "]")
+            #print("\tcurrent = " + str(int(avg[2])) + " Threshold values [" + str(configuration[4]) + " , " + str(configuration[5]) + "]")           
+           
+            return color
+
+    print("INFO: predominant color  doesn't match any color")
+    return NULL_STR
+
+
+def getAverageColor(image, option):
+
+    if option == HSV:
+
+        # Convert output image to hsv space to be able to compare with the threshold values        
+        output = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        valid_points = np.array([0, 0, 0])
+        for points in output:
+            # print(points)
+            if points[1][0] != 0 or points[1][1] != 0 or points[1][2] != 0:
+                valid_points = np.vstack(
+                    [valid_points, [points[1][0], points[1][1], points[1][2]]])
+
+        # Remove the first entry sincs its not real
+        valid_points = valid_points[1:]
+
+        # Compute the average rgb value:
+        avg = np.average(valid_points, axis=0)
+
+        # In case there aren't any valid points the returned avg value is a float instead of an array, therefore it needs to be redeclared in order not to mess with the code
+        if isinstance(avg, np.float64):
+            avg = np.array([0, 0, 0])
+
+        return avg
+
+    elif option == RGB:
+
+        valid_points = np.array([0, 0, 0])
+        for points in image:
+            # print(points)
+            if points[1][0] != 0 or points[1][1] != 0 or points[1][2] != 0:
+                valid_points = np.vstack(
+                    [valid_points, [points[1][0], points[1][1], points[1][2]]])
+
+        # Remove the first entry sincs its not real
+        valid_points = valid_points[1:]
+
+        # Compute the average rgb value:
+        avg = np.average(valid_points, axis=0)
+
+        # In case there aren't any valid points the returned avg value is a float instead of an array, therefore it needs to be redeclared in order not to mess with the code
+        if isinstance(avg, np.float64):
+            avg = np.array([0, 0, 0])
+
+        return avg
+
+    else:
+        print(INVALID_COLORSPACE_OPTION)
