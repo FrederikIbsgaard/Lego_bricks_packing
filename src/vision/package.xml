@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>vision</name>
+  <version>0.0.0</version>
+  <description>The vision package for the RSD2019 projects</description>
+  <maintainer email="anben18@student.sdu.dk">Antoni BP</maintainer>
+  <license>BSD</license>
+
+  <!-- Dependencies : -->
+ 
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>rospy</build_depend>
+  <build_depend>std_msgs</build_depend>
+
+  <build_export_depend>rospy</build_export_depend>
+  <build_export_depend>std_msgs</build_export_depend>
+
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+
+</package>
