@@ -2,6 +2,7 @@
 **/devel
 **/cmake-build-debug
 **/.idea
+**/logs
 .vscode/
 .catkin_tools/
 .catkin_workspace
