@@ -35,3 +35,13 @@ To access the pi via ssh:
 ssh pi@raspberrypi.local
 ```
 password = raspberry
+
+
+Camera module setup
+```
+This is a headline
+```   
+
+https://projects.raspberrypi.org/en/projects/getting-started-with-picamera?fbclid=IwAR1ityhSsclhhGkP4VA6zMV24nm3T6FkIS2gsmrrczlLi4mvsSZf7oAyw-g
+
+https://desertbot.io/blog/how-to-stream-the-picamera?fbclid=IwAR25O8zClL-5L6vOdb-068ZDtUMsElLWPI1p4Co3r6ZezWPHVoHe9CDb7ho
