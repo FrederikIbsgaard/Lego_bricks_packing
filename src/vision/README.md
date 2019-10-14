@@ -69,6 +69,31 @@ Then start the VNC server (you'll be asked to set a password):
 ```
 vncserver :1 -name RasPi -depth 16 -geometry 1024x768
 ```
+It will ask for a password multiple times and it will set the server running.
+
+In the laptop we need to install a VNC client:
+```
+sudo apt-get install vinagre
+```
+Run the client:
+```
+vinagre
+```
+Click:
+```
+|--> Connect
+      |--> Choose a remote desktop to connect to:
+            |--> Protocol
+                  |--> VNC
+```
+This will update the tab:
+```
+|     |--> Choose a remote desktop to connect to:
+|           |--> Host
+|                 |--> 192.168.0.4:1  
+```
+Click the connect button. A new window will appear requesting the password previously created in order to access the server. Once introduced, the raspberry destok shoul be visible.
+ 
 Enable
 Configuring the Pi
 
