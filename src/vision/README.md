@@ -19,8 +19,13 @@ sudo apt-get install network-manager
 ```
 sudo apt install openssh-server
 ```
-First we need to configure the static ip in the raspberry pi, to do so, acces the micro sd, and modify the file:
-
+First we need to configure the static ip in the raspberry pi, to do so, acces the micro sd, and modify the file /etc/dhcpcd.conf adding the following lines:
+```
+interface eth0
+static ip_address=192.168.0.4/24
+static routers = 192.168.0.30
+static domain_name_servers = 192.168.0.30 8.8.8.8
+```
 Follow this tutorial to configure the connection:
 
 * [SSH](https://stackoverflow.com/a/39086537) - Raspberry pi ssh + ethernet connection configuration. 
@@ -44,9 +49,6 @@ Insert the password = raspberry.
 
 
 # Camera module setup
-```
-This is a headline
-```   
 * [PiCam](https://projects.raspberrypi.org/en/projects/getting-started-with-picamera?fbclid=IwAR1ityhSsclhhGkP4VA6zMV24nm3T6FkIS2gsmrrczlLi4mvsSZf7oAyw-g) - Getting started with the Camera Module. 
 * [PiCam](https://desertbot.io/blog/how-to-stream-the-picamera?fbclid=IwAR25O8zClL-5L6vOdb-068ZDtUMsElLWPI1p4Co3r6ZezWPHVoHe9CDb7ho) - How to Stream the PiCamera to your Browser. 
 
