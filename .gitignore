@@ -7,3 +7,4 @@
 .catkin_workspace
 logs/
 .directory
+**/__pycache__
