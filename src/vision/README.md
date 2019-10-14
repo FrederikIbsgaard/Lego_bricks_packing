@@ -11,11 +11,11 @@
 
 Prerequisites in the desktop system:
 
-Install network-manager
+* Install network-manager
 ```
 sudo apt-get install network-manager
 ```
-Install openssh
+* Install openssh
 ```
 sudo apt install openssh-server
 ```
@@ -99,9 +99,10 @@ This will update the tab:
 ```
 Click the connect button. A new window will appear requesting the password previously created in order to access the server. Once introduced, the raspberry destok shoul be visible.
  
-Enable
-Configuring the Pi
 
+ # Configuring the Pi
+
+For the image processing the opencv library for python is required. Install it with the following comand:
 ```
 pip3 install opencv-python
 ```
