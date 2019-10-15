@@ -5,5 +5,7 @@
     
 ```bash
 sudo apt install python-rosinstall python-rosinstall-generator python-wstool build-essential
+sudo apt install ros-melodic-rosbridge-server
+sudo apt install ros-melodic-tf2-web-republisher
 ```
   
