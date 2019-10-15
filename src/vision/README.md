@@ -108,3 +108,13 @@ For the image processing the opencv library for python is required. Install it w
 ```
 pip3 install opencv-python
 ```
+
+# Installing roslibpy
+Following the guide at the repository:
+* [roslibpy](https://github.com/gramaziokohler/roslibpy) - roslibpy: ROS Bridge library
+
+```
+pip3 install service_identity
+```
+Example can be found at
+* [roslibpy](https://roslibpy.readthedocs.io/en/latest/examples.html#first-connection) - roslibpy: Examples
