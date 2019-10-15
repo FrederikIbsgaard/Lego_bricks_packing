@@ -46,16 +46,16 @@ int main(int argc, char** argv)
 
     while(ros::ok())
     {
-        /*joint_group_positions[5] *= -1.0;  // radians
+        joint_group_positions[5] *= -1.0;  // radians
         move_group.setJointValueTarget(joint_group_positions);        
 
         success = (move_group.plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
         ROS_INFO_STREAM("Did planning succeed: " << success);
 
         if(success)
-            move_group.move();*/
+            move_group.move();
 
-        move_group.setJointValueTarget(pos1);
+        /*move_group.setJointValueTarget(pos1);
 
         success = (move_group.plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
         ROS_INFO_STREAM("Did planning succeed: " << success);
@@ -73,7 +73,7 @@ int main(int argc, char** argv)
         if(success)
             move_group.move();
 
-        ros::Duration(1).sleep();
+        ros::Duration(1).sleep();*/
     }
 
     return 0;

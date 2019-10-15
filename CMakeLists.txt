@@ -133,7 +133,11 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
+
+## ROBOTICS executables:
 add_executable(${PROJECT_NAME}_ur_demo src/robotics/simple_demo.cpp)
+add_executable(print_pose_test src/robotics/print_pose_test.cpp)
+add_executable(pickup_demo_no_gripper src/robotics/pickup_demo_no_gripper.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -146,10 +150,12 @@ add_executable(${PROJECT_NAME}_ur_demo src/robotics/simple_demo.cpp)
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME}_ur_demo
-   ${catkin_LIBRARIES}
-)
+## ROBOTICS executables:
+target_link_libraries(${PROJECT_NAME}_ur_demo ${catkin_LIBRARIES})
 
+target_link_libraries(print_pose_test ${catkin_LIBRARIES})
+
+target_link_libraries(pickup_demo_no_gripper ${catkin_LIBRARIES})
 #############
 ## Install ##
 #############
