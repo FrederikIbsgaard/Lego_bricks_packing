@@ -150,6 +150,7 @@ gedit /home/pi/ros_catkin_ws/src/ros_comm/rosbag_storage/CMakeLists.txt
 gedit /home/pi/ros_catkin_ws/src/ros_comm/rosbag/CMakeLists.txt
 gedit /home/pi/ros_catkin_ws/src/image_common/image_transport/CMakeLists.txt
 gedit /home/pi/ros_catkin_ws/src/interactive_markers/CMakeLists.txt
+gedit /home/pi/ros_catkin_ws/src/visualization_tutorials/interactive_marker_tutorials/CMakeLists.txt
 ```
 Add the following line:
 ```
