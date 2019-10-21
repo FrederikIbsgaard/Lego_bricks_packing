@@ -101,7 +101,41 @@ This will update the tab:
 ```
 Click the connect button. A new window will appear requesting the password previously created in order to access the server. Once introduced, the raspberry destok shoul be visible.
  
+ # Installing ROS in the Pi
+ As explained in the following tutorial:
+ * [ROS](https://www.instructables.com/id/ROS-Melodic-on-Raspberry-Pi-4-RPLIDAR/) -ROS Melodic on Raspberry Pi 4[Debian Buster]
 
+Toubleshootting:
+Advisable to increase the swap size:
+ * [pi](https://wpitchoune.net/tricks/raspberry_pi3_increase_swap_size.html) - Raspberry PI - increase swap size
+Not able to resolve links to libboost:
+ * [ROS](https://answers.ros.org/question/327497/compiling-ros-on-raspberry-pi-4-with-buster-problem-with-libboost158/)- Compiling ROS on raspberry pi 4 with Buster, problem with libboost1.58
+ 
+```
+sudo apt remove libboost1.67-dev
+sudo apt autoremove
+sudo apt install libboost1.58-dev libboost1.58-all-dev
+sudo apt install g++-5 gcc-5
+sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 10
+sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 20
+sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-5 10
+sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-5 20
+sudo update-alternatives --install /usr/bin/cc cc /usr/bin/gcc 30
+sudo update-alternatives --set cc /usr/bin/gcc
+sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++ 30
+sudo update-alternatives --set c++ /usr/bin/g++
+sudo rm -rf ~/ros_catkin_ws/build_isolated
+sudo rm -rf ~/ros_catkin_ws/devel_isolated
+```
+Couldn't resolve Opencv3 package installation:
+ * [ROS](https://github.com/opencv/opencv/issues/14856#issuecomment-504416696) - error: invalid conversion from ‘const char*’ to ‘char*
+ 
+Installing qt5 and pyqt5:
+ * [pi](https://raspberrypi.stackexchange.com/questions/62939/pyqt5-on-a-raspberry-pi) - PyQt5 on a Raspberry Pi
+```
+sudo apt-get update
+sudo apt-get install qt5-default pyqt5-dev pyqt5-dev-tools
+```
  # Configuring the Pi
 
 For the image processing the opencv library for python is required. Install it with the following comand:
