@@ -148,6 +148,7 @@ gedit /home/pi/ros_catkin_ws/src/diagnostics/diagnostic_aggregator/CMakeLists.tx
 gedit /home/pi/ros_catkin_ws/src/filters/CMakeLists.txt
 gedit /home/pi/ros_catkin_ws/src/ros_comm/rosbag_storage/CMakeLists.txt
 gedit /home/pi/ros_catkin_ws/src/ros_comm/rosbag/CMakeLists.txt
+gedit /home/pi/ros_catkin_ws/src/image_common/image_transport/CMakeLists.txt
 ```
 Add the following line:
 ```
