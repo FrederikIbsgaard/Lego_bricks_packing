@@ -139,10 +139,11 @@ sudo apt-get install qt5-default pyqt5-dev pyqt5-dev-tools
 Couldn't resolve nodelet package dute to nullptr. We need to make sure that the package is compiled with 
  * [ROS](https://answers.ros.org/question/67784/c11-compatibility/) - C++11 compatibility
  
- To the CMake file:
+ To the CMake files:
 ```
-cd ros_catkin_ws/src/nodelet_core/nodelet
-gedit CMakeLists.txt
+gedit /home/pi/ros_catkin_ws/src/nodelet_core/nodelet/CMakeLists.txt
+gedit /home/pi/ros_catkin_ws/src/common_tutorials/nodelet_tutorial_math
+/CMakeLists.txt
 ```
 Add the following line:
 ```
