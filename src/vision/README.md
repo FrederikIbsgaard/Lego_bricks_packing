@@ -145,6 +145,7 @@ gedit /home/pi/ros_catkin_ws/src/nodelet_core/nodelet/CMakeLists.txt
 gedit /home/pi/ros_catkin_ws/src/common_tutorials/nodelet_tutorial_math/CMakeLists.txt
 gedit /home/pi/ros_catkin_ws/src/common_tutorials/pluginlib_tutorials/CMakeLists.txt
 gedit /home/pi/ros_catkin_ws/src/diagnostics/diagnostic_aggregator/CMakeLists.txt
+gedit /home/pi/ros_catkin_ws/src/filters/CMakeLists.txt
 ```
 Add the following line:
 ```
