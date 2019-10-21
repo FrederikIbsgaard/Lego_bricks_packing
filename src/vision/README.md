@@ -146,7 +146,8 @@ gedit /home/pi/ros_catkin_ws/src/common_tutorials/nodelet_tutorial_math/CMakeLis
 gedit /home/pi/ros_catkin_ws/src/common_tutorials/pluginlib_tutorials/CMakeLists.txt
 gedit /home/pi/ros_catkin_ws/src/diagnostics/diagnostic_aggregator/CMakeLists.txt
 gedit /home/pi/ros_catkin_ws/src/filters/CMakeLists.txt
-gedit /home/pi/ros_catkin_ws/build_isolated/rosbag_storage/CMakeLists.txt
+gedit /home/pi/ros_catkin_ws/src/ros_comm/rosbag_storage/CMakeLists.txt
+gedit /home/pi/ros_catkin_ws/src/ros_comm/rosbag/CMakeLists.txt
 ```
 Add the following line:
 ```
