@@ -153,6 +153,10 @@ if(CMAKE_COMPILER_IS_GNUCXX)
   add_definitions(-std=gnu++0x) 
 endif()
 ```
+* [ROS](https://answers.ros.org/question/39657/importerror-no-module-named-rospkg/) - ImportError: No module named rospkg
+```
+ sudo apt-get purge python-rospkg && sudo apt-get update && sudo apt-get install -y ipython python-rospkg
+```
 
  # Configuring the Pi
 
