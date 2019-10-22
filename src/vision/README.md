@@ -1,14 +1,14 @@
 
 ## ROS Configuration
- Master:
-     * Set ROS_IP to own IP (BEFORE RUNNING ROSCORE!!)
-     * Set ROS_HOSTNAME to own IP
-     * Set ROS_MASTER_URI to IP:11311
+Master:
+* Set ROS_IP to own IP (BEFORE RUNNING ROSCORE!!)
+* Set ROS_HOSTNAME to own IP
+* Set ROS_MASTER_URI to IP:11311
 
- Slave:
-     * Set ROS_IP to MASTER IP
-     * Set ROS_HOSTNAME to own IP
-     * Set ROS_MASTER_URI to $ROS_IP:11311
+Slave:
+* Set ROS_IP to MASTER IP
+* Set ROS_HOSTNAME to own IP
+* Set ROS_MASTER_URI to $ROS_IP:11311
 
 
 ## RaspberryPi configuration
