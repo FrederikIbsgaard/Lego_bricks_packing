@@ -21,22 +21,14 @@ int main(int argc, char** argv)
     moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
     const robot_state::JointModelGroup* joint_model_group = move_group.getCurrentState()->getJointModelGroup(PLANNING_GROUP);
 
-    
-    moveit::core::RobotStatePtr current_state = move_group.getCurrentState();
-    geometry_msgs::PoseStamped current_pose;
-    tf2::Quaternion q;
-    tf2::Matrix3x3 m;
-    double roll, pitch, yaw;
+    std::vector<double> q;
 
     while(ros::ok())
     {
-        current_pose = move_group.getCurrentPose("wrist_3_link");
-        q = tf2::Quaternion(current_pose.pose.orientation.x, current_pose.pose.orientation.y,current_pose.pose.orientation.z, current_pose.pose.orientation.w);
-        m = tf2::Matrix3x3(q);
-        m.getRPY(roll, pitch, yaw);
-        ROS_INFO_STREAM("x: " << current_pose.pose.position.x << " y: " << current_pose.pose.position.y << " z: " << current_pose.pose. position.z << " R: " << roll << " P: " << pitch << " Y:" << yaw);
-
-        ros::Duration(1).sleep();
+        ROS_INFO("Press ENTER to get current configuration.");
+        std::cin.get();
+        q = move_group.getCurrentJointValues();
+        ROS_INFO_STREAM(q[0] << ", " << q[1] << ", " << q[2] << ", " << q[3] << ", " << q[4] << ", " << q[5]);
     }
 
     return 0;

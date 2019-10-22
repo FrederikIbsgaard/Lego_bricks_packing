@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   eigen_conversions
   gazebo_ros
   gazebo
+  message_generation
 )
 
 SET(CMAKE_BUILD_TYPE Release)
@@ -59,11 +60,10 @@ SET(CMAKE_BUILD_TYPE Release)
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+  goto_config.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -73,10 +73,10 @@ SET(CMAKE_BUILD_TYPE Release)
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -112,6 +112,7 @@ catkin_package(
 #  LIBRARIES er_smart_cam
 #  CATKIN_DEPENDS roscpp std_msgs
 #  DEPENDS system_lib
+   CATKIN_DEPENDS message_runtime
 )
 
 ###########
@@ -145,6 +146,7 @@ include_directories(
 add_executable(${PROJECT_NAME}_ur_demo src/robotics/simple_demo.cpp)
 add_executable(print_pose_test src/robotics/print_pose_test.cpp)
 add_executable(pickup_demo_no_gripper src/robotics/pickup_demo_no_gripper.cpp)
+add_executable(robot_node src/robotics/robot_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -163,6 +165,8 @@ target_link_libraries(${PROJECT_NAME}_ur_demo ${catkin_LIBRARIES})
 target_link_libraries(print_pose_test ${catkin_LIBRARIES})
 
 target_link_libraries(pickup_demo_no_gripper ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
+target_link_libraries(robot_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 #############
 ## Install ##
 #############
