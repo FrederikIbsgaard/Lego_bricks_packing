@@ -8,20 +8,16 @@
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
-geometry_msgs::PoseStamped createPose(double x, double y, double z, double R, double P, double Y);
-void rotate180yaw(geometry_msgs::PoseStamped& pose);
-
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "pickup_demo_no_gripper");
     ros::NodeHandle n;
 
     //Poses:
-    geometry_msgs::PoseStamped preGrasp1 = createPose(-0.3097, -0.4345, 0.1795, 0.724, 3.305, -0.069);
-    geometry_msgs::PoseStamped grasp1 = createPose(-0.3097, -0.4345, 0.06, 0.724, 3.305, -0.069);
-
-    geometry_msgs::PoseStamped preGrasp2 = createPose(0.1558, -0.4065, 0.1795, 0.717, -3.105, -0.064);
-    geometry_msgs::PoseStamped grasp2 = createPose(0.1558, -0.4065, 0.06, 0.717, -3.105, -0.064);
+    std::vector<double> pickup = {1.17125, -0.811894, 1.30296, -2.49292, -1.60823, 0.0158257};
+    std::vector<double> box = {1.10144, -1.02262, 1.74628, -2.27726, -1.55929, 0.0158858};
+    std::vector<double> pickup2 = {0.858479, -0.837565, 1.31525, -2.37817, -1.47703, -0.234145};
+    std::vector<double> discard = {1.07089, -0.911601, 1.26705, -1.93759, -1.47984, -0.233678};
 
     ros::AsyncSpinner spinner(1);
     spinner.start();
@@ -30,6 +26,7 @@ int main(int argc, char** argv)
     moveit::planning_interface::MoveGroupInterface move_group(PLANNING_GROUP);
     moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
     const robot_state::JointModelGroup* joint_model_group = move_group.getCurrentState()->getJointModelGroup(PLANNING_GROUP);
+    // move_group.setPlanningTime(3.0);
 
     //Add table plane:
     /*ros::Publisher planning_scene_diff_publisher = n.advertise<moveit_msgs::PlanningScene>("planning_scene", 1);
@@ -59,128 +56,58 @@ int main(int argc, char** argv)
     planning_scene.is_diff = true;
     planning_scene_diff_publisher.publish(planning_scene);*/
     
-    moveit::core::RobotStatePtr current_state = move_group.getCurrentState();
-    geometry_msgs::PoseStamped current_pose;
-    tf2::Matrix3x3 m;
-    double roll, pitch, yaw;
+    //moveit::core::RobotStatePtr current_state = move_group.getCurrentState();
 
     moveit::planning_interface::MoveGroupInterface::Plan my_plan;
     bool success = false;
 
-    ROS_INFO_STREAM("move_group.getPlanningFrame(): " << move_group.getPlanningFrame());
-    bool setEeSuccess = move_group.setEndEffectorLink("ee_link");
-    ROS_INFO_STREAM("move_group.getEndEffectorLink(): " << move_group.getEndEffectorLink());
-
-    ROS_INFO_STREAM("Links:");
-
-    std::vector<std::string> links = move_group.getLinkNames();
-
-    for(int i = 0; i < links.size(); i++)
-    {
-        ROS_INFO_STREAM(links[i]);
-    }
-
-    moveit::core::Transforms::getAllTransforms();
-
     while(ros::ok())
     {
-        //preGrasp1:
-        move_group.setPoseTarget(preGrasp1);
+        //Pickup 1:
+        ROS_INFO_STREAM("Planning to pickup 1");
+        move_group.setJointValueTarget(pickup);
         success = (move_group.plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+
         if(success)
         {
-            ROS_INFO("Moving to pre-grasp 1");
-            ROS_INFO_STREAM(preGrasp1);
+            ROS_INFO_STREAM("Moving to pickup 1");
             move_group.move();
         }
-        else
-            break;
 
-        ros::Duration(1).sleep();
-
-        ROS_INFO("Press ENTER to continue");
-        /*DEBUG*/ std::cin.get();
-
-        //grasp1:
-        move_group.setPoseTarget(grasp1);
+        // Box:
+        ROS_INFO_STREAM("Planning to box");
+        move_group.setJointValueTarget(box);
         success = (move_group.plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+
         if(success)
         {
-            ROS_INFO("Moving to grasp 1");
-            ROS_INFO_STREAM(grasp1);
+            ROS_INFO_STREAM("Moving to box");
             move_group.move();
         }
-        else
-            break;
 
-        ros::Duration(1).sleep();
-        ROS_INFO("Press ENTER to continue");
-        /*DEBUG*/ std::cin.get();
-
-        //preGrasp2:
-        move_group.setPoseTarget(preGrasp2);
+        // Pickup 2:
+        ROS_INFO_STREAM("Planning to pickup2");
+        move_group.setJointValueTarget(pickup2);
         success = (move_group.plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+
         if(success)
         {
-            ROS_INFO("Moving to pre-grasp 2");
-            ROS_INFO_STREAM(preGrasp2);
+            ROS_INFO_STREAM("Moving to pickup2");
             move_group.move();
         }
-        else
-            break;
 
-        ros::Duration(1).sleep();
-        ROS_INFO("Press ENTER to continue");
-        /*DEBUG*/ std::cin.get();
-
-        //grasp2:
-        move_group.setPoseTarget(grasp2);
+        // Discard:
+        ROS_INFO_STREAM("Planning to discard");
+        move_group.setJointValueTarget(discard);
         success = (move_group.plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+
         if(success)
         {
-            ROS_INFO("Moving to grasp 2");
-            ROS_INFO_STREAM(grasp2);
+            ROS_INFO_STREAM("Moving to discard");
             move_group.move();
         }
-        else
-            break;
-
-        ros::Duration(1).sleep();
-        ROS_INFO("Press ENTER to continue");
-        /*DEBUG*/ std::cin.get();
-
-
     }
-
     ROS_ERROR("Planning failed...");
 
     return 0;
-}
-
-geometry_msgs::PoseStamped createPose(double x, double y, double z, double R, double P, double Y)
-{
-    geometry_msgs::PoseStamped pose;
-    pose.pose.position.x = x;
-    pose.pose.position.y = y;
-    pose.pose.position.z = z;
-
-    tf2::Quaternion q;
-    q.setRPY(R, P, Y);
-
-    pose.pose.orientation = tf2::toMsg(q);
-
-    return pose;
-}
-
-void rotate180yaw(geometry_msgs::PoseStamped& pose)
-{
-    tf2::Quaternion qRot;
-    qRot.setRPY(0.0, 0.0, 3.14159);
-
-    tf2::Quaternion qOrig(pose.pose.orientation.x, pose.pose.orientation.y, pose.pose.orientation.z, pose.pose.orientation.w);
-
-    qOrig = qRot*qOrig;
-    qOrig.normalize();
-
-    pose.pose.orientation = tf2::toMsg(qOrig);
 }

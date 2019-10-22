@@ -13,7 +13,11 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   moveit_ros_planning_interface
   eigen_conversions
+  gazebo_ros
+  gazebo
 )
+
+SET(CMAKE_BUILD_TYPE Release)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -119,6 +123,9 @@ catkin_package(
 include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIR}
+  ${EIGEN_INCLUDE_DIRS}
+  ${GAZEBO_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -155,7 +162,7 @@ target_link_libraries(${PROJECT_NAME}_ur_demo ${catkin_LIBRARIES})
 
 target_link_libraries(print_pose_test ${catkin_LIBRARIES})
 
-target_link_libraries(pickup_demo_no_gripper ${catkin_LIBRARIES})
+target_link_libraries(pickup_demo_no_gripper ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 #############
 ## Install ##
 #############
