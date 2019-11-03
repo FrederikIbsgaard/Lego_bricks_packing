@@ -87,6 +87,26 @@ def delete_order(id, ticket):
         print("Deleting order:", data['message'])
 
 
+def post_pml(PML_State):
+    # Post the current PackML state to the log
+    response = requests.post(
+        HOST + '/log',
+        json={'cell_id': CELL_ID,
+              'event': PML_State,
+              'comment': ""})
+
+    if response.status_code == 201:
+        print(PML_State)
+        # Convert response to json/dictionary
+        entry = json.loads(response.text)
+        entry['log_entry']
+
+    elif response.status_code == 400:
+        # Convert response to json/dictionary
+        data = json.loads(response.text)
+        print("Logging PML:", data['message'])
+
+
 # Global variables
 HOST = 'http://127.0.0.1:5000'
 CELL_ID = 8
