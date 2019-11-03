@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="stylesheet.css">
+    <title>Brick packer, RSD Inc.</title>
+</head>
+<body>
+        <div id="my_container">
+            <div id="oee_container">
+                <h1 id="oee_title">OEE</h1>
+            </div>
+            <div id="packml_diagram_container">
+                <img src="../img/packml.png">
+            </div>
+        </div>
+        <div id="controls">
+            <p class="status_text">Status:</p><p class="status_value">Ready</p>
+            <div id="buttons">
+                <form id="play_btn" action="" method="post" name="play">
+                        <button type="submit" formmethod="post"><img src="../icons/play-circle-solid.svg" /></button>
+                </form>
+                <form id="pause_btn" action="" method="post" name="pause">
+                        <button type="submit" formmethod="post"><img src="../icons/pause-circle-solid.svg" /></button>
+                </form>
+                <form id="stop_btn" action="" method="post" name="stop">
+                        <button type="submit" formmethod="post"><img src="../icons/stop-circle-solid.svg" /></button>
+                </form>
+                <form id="reset_btn" action="" method="post" name="stop">
+                        <button type="submit" formmethod="post"><img src="../icons/reset-solid.svg" /></button>
+                </form>
+            </div>
+            <div id="current_order_container">
+                <p class="order_stats_text">Current order #:</p><p class="order_stats_value">XXXX</p></br></br></br>
+                <div class="bricks_stats" id="blue_bricks">42</div>
+                <div class="bricks_stats" id="red_bricks">42</div>
+                <div class="bricks_stats" id="yellow_bricks">42</div>
+            </div>
+        </div>
+</body>
+</html>
