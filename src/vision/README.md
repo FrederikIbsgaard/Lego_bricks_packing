@@ -1,10 +1,14 @@
 
 ## ROS Configuration
+Master:
+* Set ROS_IP to own IP (BEFORE RUNNING ROSCORE!!)
+* Set ROS_HOSTNAME to own IP
+* Set ROS_MASTER_URI to IP:11311
 
-* set ROS_HOSTNAME on robot PC to its own ip
-* set ROS_HOSTNAME on base PC to its own ip
-* set ROS_IP on robot PC to base IP
-* set ROS_MASTER_URI to base IP:11311 both machines.
+Slave:
+* Set ROS_IP to MASTER IP
+* Set ROS_HOSTNAME to own IP
+* Set ROS_MASTER_URI to $ROS_IP:11311
 
 
 ## RaspberryPi configuration
@@ -101,6 +105,68 @@ This will update the tab:
 ```
 Click the connect button. A new window will appear requesting the password previously created in order to access the server. Once introduced, the raspberry destok shoul be visible.
  
+ # Installing ROS in the Pi
+ As explained in the following tutorial:
+ * [ROS](https://www.instructables.com/id/ROS-Melodic-on-Raspberry-Pi-4-RPLIDAR/) -ROS Melodic on Raspberry Pi 4[Debian Buster]
+
+Toubleshootting:
+Advisable to increase the swap size:
+ * [pi](https://wpitchoune.net/tricks/raspberry_pi3_increase_swap_size.html) - Raspberry PI - increase swap size
+Not able to resolve links to libboost:
+ * [ROS](https://answers.ros.org/question/327497/compiling-ros-on-raspberry-pi-4-with-buster-problem-with-libboost158/)- Compiling ROS on raspberry pi 4 with Buster, problem with libboost1.58
+ 
+```
+sudo apt remove libboost1.67-dev
+sudo apt autoremove
+sudo apt install libboost1.58-dev libboost1.58-all-dev
+sudo apt install g++-5 gcc-5
+sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 10
+sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 20
+sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-5 10
+sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-5 20
+sudo update-alternatives --install /usr/bin/cc cc /usr/bin/gcc 30
+sudo update-alternatives --set cc /usr/bin/gcc
+sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++ 30
+sudo update-alternatives --set c++ /usr/bin/g++
+sudo rm -rf ~/ros_catkin_ws/build_isolated
+sudo rm -rf ~/ros_catkin_ws/devel_isolated
+```
+Couldn't resolve Opencv3 package installation:
+ * [ROS](https://github.com/opencv/opencv/issues/14856#issuecomment-504416696) - error: invalid conversion from ‘const char*’ to ‘char*
+ 
+Couldn't resolve ros_gui package:
+ * [pi](https://raspberrypi.stackexchange.com/questions/62939/pyqt5-on-a-raspberry-pi) - PyQt5 on a Raspberry Pi
+```
+sudo apt-get update
+sudo apt-get install qt5-default pyqt5-dev pyqt5-dev-tools
+```
+Couldn't resolve nodelet package dute to nullptr. We need to make sure that the package is compiled with 
+ * [ROS](https://answers.ros.org/question/67784/c11-compatibility/) - C++11 compatibility
+ 
+ To the CMake files:
+```
+gedit /home/pi/ros_catkin_ws/src/nodelet_core/nodelet/CMakeLists.txt
+gedit /home/pi/ros_catkin_ws/src/common_tutorials/nodelet_tutorial_math/CMakeLists.txt
+gedit /home/pi/ros_catkin_ws/src/common_tutorials/pluginlib_tutorials/CMakeLists.txt
+gedit /home/pi/ros_catkin_ws/src/diagnostics/diagnostic_aggregator/CMakeLists.txt
+gedit /home/pi/ros_catkin_ws/src/filters/CMakeLists.txt
+gedit /home/pi/ros_catkin_ws/src/ros_comm/rosbag_storage/CMakeLists.txt
+gedit /home/pi/ros_catkin_ws/src/ros_comm/rosbag/CMakeLists.txt
+gedit /home/pi/ros_catkin_ws/src/image_common/image_transport/CMakeLists.txt
+gedit /home/pi/ros_catkin_ws/src/interactive_markers/CMakeLists.txt
+gedit /home/pi/ros_catkin_ws/src/visualization_tutorials/interactive_marker_tutorials/CMakeLists.txt
+```
+Add the following line:
+```
+# Line added to make sure that the compiler is correct:
+if(CMAKE_COMPILER_IS_GNUCXX) 
+  add_definitions(-std=gnu++0x) 
+endif()
+```
+* [ROS](https://answers.ros.org/question/39657/importerror-no-module-named-rospkg/) - ImportError: No module named rospkg
+```
+ sudo apt-get purge python-rospkg && sudo apt-get update && sudo apt-get install -y ipython python-rospkg
+```
 
  # Configuring the Pi
 
@@ -108,3 +174,13 @@ For the image processing the opencv library for python is required. Install it w
 ```
 pip3 install opencv-python
 ```
+
+# Installing roslibpy
+Following the guide at the repository:
+* [roslibpy](https://github.com/gramaziokohler/roslibpy) - roslibpy: ROS Bridge library
+
+```
+pip3 install service_identity
+```
+Example can be found at
+* [roslibpy](https://roslibpy.readthedocs.io/en/latest/examples.html#first-connection) - roslibpy: Examples
