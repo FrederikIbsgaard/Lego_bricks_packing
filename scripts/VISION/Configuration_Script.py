@@ -2,7 +2,19 @@
 import os
 
 interpreter = "python" #python3
-image = "images/lego"
+
+image = "/home/pi/Desktop/image.jpg"
+
+from picamera import PiCamera
+from time import sleep
+
+camera = PiCamera()
+
+camera.start_preview()
+#sleep(5)
+camera.capture(image) 
+camera.stop_preview()
+
 
 
 # Select cropping limits:
