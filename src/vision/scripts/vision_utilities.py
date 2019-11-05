@@ -4,6 +4,9 @@ import cv2
 import json
 import numpy as np
 import os
+from picamera.array import PiRGBArray
+from picamera import PiCamera
+import time
 
 NULL_STR = ""
 NULL_JSON = "{}"
@@ -259,6 +262,7 @@ def cropImage(image,color):
         # crop image using the Json information:
         output = image[obj_json["Corner1"][0]:obj_json["Corner2"]
                        [0], obj_json["Corner1"][1]:obj_json["Corner2"][1]]
+
         return output
 
 
@@ -323,7 +327,8 @@ def getColor(image, option):
             filtered_image  = filterHSV(image,color)
         else:
             return INVALID_COLORSPACE_OPTION
-
+	cv2.imshow("test", filtered_image)
+	cv2.waitKey(0)
         lower_bound = np.array(
             [configuration[0], configuration[2], configuration[4]])
         upper_bound = np.array(
@@ -393,3 +398,53 @@ def getAverageColor(image, option):
 
     else:
         print(INVALID_COLORSPACE_OPTION)
+
+
+
+def getImageFromPicam():
+	camera = PiCamera()
+	camera.resolution = (1024, 768)
+	rawCapture = PiRGBArray(camera)
+
+	time.sleep(0.1)
+
+	camera.capture(rawCapture, format="bgr")
+	image = rawCapture.array
+
+	hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+
+	# Normal masking algorithm
+	h = 56
+	s = 49
+	v = 45
+	threshold_h = 100
+	threshold_s = 100
+	threshold_v = 100
+
+	lower_bound = np.array([h - threshold_h, s - threshold_s, v - threshold_v])
+	upper_bound = np.array([h + threshold_h, s + threshold_s, v + threshold_v])
+
+	# Construct mask
+	mask = cv2.inRange(hsv_image, lower_bound, upper_bound)
+	output = cv2.bitwise_and(image, image, mask=mask)
+
+
+	cv2.imshow("output", output)
+	cv2.imshow("mask", mask)
+	cv2.waitKey(0)
+	
+
+
+   	#x,y = cv2.setMouseCallback('image',mouse_callback)
+	pixel= image[423,770]
+	print("---------------------------------------------------")
+	print(pixel)
+
+   	# mouse callback function
+def mouse_callback(event,x,y,flags,param):
+	if event == cv2.EVENT_LBUTTONDOWN:
+		return x, y
+
+
+
+

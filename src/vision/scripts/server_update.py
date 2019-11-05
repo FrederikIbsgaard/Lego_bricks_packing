@@ -12,6 +12,7 @@ import vision_utilities as utilities_vision
 # configure the service logging
 # --------------------------------------------------------------------------- #
 import logging
+import subprocess
 logging.basicConfig()
 log = logging.getLogger()
 log.setLevel(logging.DEBUG)
@@ -39,10 +40,13 @@ def updating_writer(a):
 
 
 def checkColor(expected_color):
-    print('Am i seeing a blue brick?')
-    state, image = utilities_vision.loadImage("lego")
-    output = utilities_vision.cropImage(image,color)  
-    color = utilities_vision.getColor(output,utilities_vision.HSV)
+    print('Am i seeing a ' + expected_color + ' brick?')
+    utilities_vision.getImageFromPicam()
+    cmd = "raspistill -w 640 -h 480 -o lego_conf.jpg"
+    subprocess.call(cmd, shell=True)
+    state, image = utilities_vision.loadImage("lego_conf")
+    output = utilities_vision.cropImage(image, expected_color)  
+    color = utilities_vision.getColor(output,utilities_vision.RGB)
     if(expected_color == color):
         print("INFO: The color matches: " + color)
     else:
