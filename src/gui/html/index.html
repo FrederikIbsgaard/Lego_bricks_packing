@@ -184,6 +184,48 @@
             return true;
         });
         
+        //Show or hide log:
+        function setLogVis()
+        {
+            var checkbox = document.getElementById("show_log_checkbox");
+            var logContainer = document.getElementById("log_container");
+            var clearBtn = document.getElementById("clear_log_btn");
+
+            if(checkbox.checked)
+            {
+                logContainer.style = "background-color: #ffffff; width: 90%; height: 38%; visibility: visible; overflow-y: scroll; overflow-wrap: break-word;";
+                clearBtn.style = "margin-top: 5px; margin-bottom: 5px; height: 30px; width: 50px; background: #ffffff; color: #82ABA1; font-weight: bold; visibility: visible;";
+
+            }
+            else
+            {
+                logContainer.style = "background-color: #ffffff; width: 90%; height: 38%; visibility: hidden; overflow-y: scroll; overflow-wrap: break-word;";
+                clearBtn.style = "margin-top: 5px; margin-bottom: 5px; height: 30px; width: 50px; background: #ffffff; color: #82ABA1; font-weight: bold; visibility: hidden;";
+            }
+
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        //Clear log:
+        function clearLog()
+        {
+            if(confirm("Clear log?"))
+            {
+                document.getElementById("log_container").innerHTML = "";
+            }
+        }
+
+        //Subscribe to log topic:
+        var logSub = new ROSLIB.Topic({
+            ros : ros,
+            name : '/system_log',
+            messageType : 'std_msgs/String'
+        });
+
+        logSub.subscribe(function(message)
+        {
+            document.getElementById("log_container").innerHTML += message.data + "</br>";
+        });
 
     </script>
     
@@ -196,18 +238,23 @@
                 <h1 id="oee_title">OEE</h1>
                 <table>
                     <tr>
-                        <td>Good</td><td id="good_cell"></td>
+                        <td class="oee_status_text">Availability</td><td id="avail_val" class="oee_status_value">-</td>
                     </tr>
                     <tr>
-                        <td>Reject</td><td></td>
+                        <td class="oee_status_text">Performance</td><td id="perf_val" class="oee_status_value">-</td>
                     </tr>
                     <tr>
-                        <td>Rate</td><td></td>
+                        <td class="oee_status_text">Quality</td><td id="qual_val" class="oee_status_value">-</td>
                     </tr>
                     <tr>
-                        <td>Cycle</td><td></td>
+                        <td class="oee_status_text">OEE</td><td id="oee_val" class="oee_status_value">-</td>
                     </tr>
                 </table>
+            </br>
+                <input type="checkbox" id="show_log_checkbox" onclick="setLogVis()" checked><label id="checkbox_text">Show log</label></input>
+                <div id="log_container">
+                </div>
+                <button id="clear_log_btn" onclick="clearLog()">Clear</button>
             </div>
             <div id="packml_diagram_container">
                 <svg id="packml_diagram" width="35cm" height="20cm" viewBox="179 79 823 462" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
