@@ -4,6 +4,8 @@ import cv2
 import json
 import numpy as np
 import os
+from picamera.array import PiRGBArray
+from picamera import PiCamera
 import time
 
 NULL_STR = ""
@@ -221,7 +223,6 @@ def updateColorConfigurationJson(key, values, option):
 
 def getConfigurationValues(key, option):
 
-    #print("INFO: Loading the configuration values for: " + key)
     if key == "red" or key == "yellow" or key == "blue":
 
         # load json
@@ -251,13 +252,10 @@ def cropImage(image,color):
     # load Json file:
     if VALID_COLORS[0] == color:
     	state, obj_json = loadJson(PATH_TO_CONF_CROPPING_JSON_RED)
-        #print("INFO: Cropping image, selected color is: " + color + ' / ' + VALID_COLORS[0])
     elif VALID_COLORS[1] == color:
     	state, obj_json = loadJson(PATH_TO_CONF_CROPPING_JSON_YELLOW)
-        #print("INFO: Cropping image, selected color is: " + color + ' / ' + VALID_COLORS[1])
     elif VALID_COLORS[2] == color:
     	state, obj_json = loadJson(PATH_TO_CONF_CROPPING_JSON_BLUE)
-        #print("INFO: Cropping image, selected color is: " + color + ' / ' + VALID_COLORS[2])
 
     if state == SUCCESS:
 
@@ -313,59 +311,65 @@ def filterRGB(image, color):
     return output
 
 
-def getColor(image, option,expected_color):
+def getColor(image, option):
     
     for color in VALID_COLORS:
-        if(color == expected_color):
-            #print("INFO: Getting color, expected color is: " + expected_color)
-            state = [] 
-            configuration  = []
-            filtered_image = []
 
-            if option == RGB:
-                state, configuration = getConfigurationValues(color,RGB)
-                filtered_image  = filterRGB(image,color)
-            elif option == HSV:
-                state, configuration = getConfigurationValues(color,HSV)
-                filtered_image  = filterHSV(image,color)
-                cv2.imshow("Filtered", filtered_image)
-                #cv2.waitKey(0)
-            else:
-                return INVALID_COLORSPACE_OPTION
-            lower_bound = np.array(
-		        [configuration[0], configuration[2], configuration[4]])
-            upper_bound = np.array(
-		        [configuration[1], configuration[3], configuration[5]])
+        state = [] 
+        configuration  = []
+        filtered_image = []
 
+        if option == RGB:
+            state, configuration = getConfigurationValues(color,RGB)
+            filtered_image  = filterRGB(image,color)
+        elif option == HSV:
+            state, configuration = getConfigurationValues(color,HSV)
+            filtered_image  = filterHSV(image,color)
+        else:
+            return INVALID_COLORSPACE_OPTION
+        lower_bound = np.array(
+            [configuration[0], configuration[2], configuration[4]])
+        upper_bound = np.array(
+            [configuration[1], configuration[3], configuration[5]])
 
-            avg = getAverageColor(filtered_image, option,color)
         
-            height, width = filtered_image.shape[:2]
-            if(avg > (height*width)*0.5 ):		       
-                return color
+        avg = getAverageColor(filtered_image, option)
+
+        if avg[0] >= configuration[0] and avg[0] <= configuration[1] and avg[1] >= configuration[2] and avg[1] <= configuration[3] and avg[2] >= configuration[4] and avg[2] <= configuration[5]:
+
+            #print("INFO: Threshold and currrent values")
+            #print("\tcurrent = " + str(int(avg[0])) + " Threshold values [" + str(configuration[0]) + " , " + str(configuration[1]) + "]")
+            #print("\tcurrent = " + str(int(avg[1])) + " Threshold values [" + str(configuration[2]) + " , " + str(configuration[3]) + "]")
+            #print("\tcurrent = " + str(int(avg[2])) + " Threshold values [" + str(configuration[4]) + " , " + str(configuration[5]) + "]")           
+           
+            return color
 
     print("INFO: predominant color  doesn't match any color")
     return NULL_STR
 
 
-def getAverageColor(image, option,color):
+def getAverageColor(image, option):
 
     if option == HSV:
-        # Get previous configuration values:
-        state, configuration = getConfigurationValues(color, HSV)
 
-        # converting to HSV
-        rgb = image.copy()
-        hsv = cv2.cvtColor(rgb, cv2.COLOR_BGR2HSV)
-        # Normal masking algorithm
-        lower_bound = np.array([configuration[0], configuration[2], configuration[4]])
-        upper_bound = np.array([configuration[1], configuration[3], configuration[5]])
-        # Construct mask
-        mask = cv2.inRange(hsv, lower_bound, upper_bound)
-        output = cv2.bitwise_and(image, image, mask=mask)
-        avg = np.sum(mask==255)
+        # Convert output image to hsv space to be able to compare with the threshold values        
+        output = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        valid_points = np.array([0, 0, 0])
+        for points in output:
+            # print(points)
+            if points[1][0] != 0 or points[1][1] != 0 or points[1][2] != 0:
+                valid_points = np.vstack(
+                    [valid_points, [points[1][0], points[1][1], points[1][2]]])
 
+        # Remove the first entry sincs its not real
+        valid_points = valid_points[1:]
 
+        # Compute the average rgb value:
+        avg = np.average(valid_points, axis=0)
+
+        # In case there aren't any valid points the returned avg value is a float instead of an array, therefore it needs to be redeclared in order not to mess with the code
+        if isinstance(avg, np.float64):
+            avg = np.array([0, 0, 0])
 
         return avg
 
@@ -395,6 +399,17 @@ def getAverageColor(image, option,color):
 
 
 
+camera = PiCamera()
+
+
+def getImageFromPicam(resolution):
+	camera.resolution = (resolution[0], resolution[1])
+	rawCapture = PiRGBArray(camera)
+	time.sleep(0.1)
+	camera.capture(rawCapture, format="bgr")
+	image = rawCapture.array
+
+	return image
 
 
 

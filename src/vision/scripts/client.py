@@ -16,12 +16,13 @@ def run_sync_client():
     client.connect()
 
     rr = client.read_holding_registers(address=0x10, count=3, unit=UNIT)
-    print(rr.registers[0])
+    #print(rr.registers[0])
     rq = client.write_register(address=0x10, value=2, unit=UNIT)    
     rr = client.read_holding_registers(address=0x10, count=3, unit=UNIT)
-    print(rr.registers[0])
+    #print(rr.registers[0])
+    print rr.registers
 
-    assert(not rq.isError())     # test that we are not an error
+    #assert(not rq.isError())     # test that we are not an error
     
     client.close()
 

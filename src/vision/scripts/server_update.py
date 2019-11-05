@@ -8,6 +8,11 @@ from pymodbus.transaction import ModbusRtuFramer, ModbusAsciiFramer
 from twisted.internet.task import LoopingCall
 import modbus_utilities as utilities_modbus
 import vision_utilities as utilities_vision
+from picamera.array import PiRGBArray
+from picamera import PiCamera
+import cv2
+import time
+
 # --------------------------------------------------------------------------- #
 # configure the service logging
 # --------------------------------------------------------------------------- #
@@ -31,22 +36,41 @@ def updating_writer(a):
 
     if(values[0]== utilities_modbus.GET_BRICK_COLOR_BLUE):
         checkColor('blue')
+        values[0]=0
+        context[slave_id].setValues(register, address, values)
     elif(values[0]== utilities_modbus.GET_BRICK_COLOR_RED):
         checkColor('red')
+        values[0]=0
+        context[slave_id].setValues(register, address, values)
     elif(values[0]== utilities_modbus.GET_BRICK_COLOR_YELLOW):
         checkColor('yellow')
+        values[0]=0
+        context[slave_id].setValues(register, address, values)
     else:
         print('ERROR: Invalid value in the register')
 
 
+camera = PiCamera()
+
+
+def getImageFromPicam(resolution):
+	camera.resolution = (resolution[0], resolution[1])
+	rawCapture = PiRGBArray(camera)
+	time.sleep(0.1)
+	camera.capture(rawCapture, format="bgr")
+	image = rawCapture.array
+
+	return image
+
+
 def checkColor(expected_color):
-    print('Am i seeing a ' + expected_color + ' brick?')
-    utilities_vision.getImageFromPicam()
-    cmd = "raspistill -w 640 -h 480 -o lego_conf.jpg"
-    subprocess.call(cmd, shell=True)
-    state, image = utilities_vision.loadImage("lego_conf")
+    print('INFO: Checking for color: ' + expected_color)
+    image = getImageFromPicam([640,480])
+  
     output = utilities_vision.cropImage(image, expected_color)  
-    color = utilities_vision.getColor(output,utilities_vision.RGB)
+    color = utilities_vision.getColor(output,utilities_vision.HSV,expected_color)
+    utilities_vision.saveImage(output, "temp")
+
     if(expected_color == color):
         print("INFO: The color matches: " + color)
     else:
@@ -60,7 +84,7 @@ def run_updating_server():
     store = ModbusSlaveContext(
         di=ModbusSequentialDataBlock(0, [1]*100),
         co=ModbusSequentialDataBlock(0, [17]*100),
-        hr=ModbusSequentialDataBlock(0, [1]*100),
+        hr=ModbusSequentialDataBlock(0, [2]*100),
         ir=ModbusSequentialDataBlock(0, [17]*100))
     context = ModbusServerContext(slaves=store, single=True)
     
