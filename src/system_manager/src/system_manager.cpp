@@ -1,6 +1,8 @@
 #include <iostream>
 #include "ros/ros.h"
 
+using namespace std;
+
 int currentOrderContents[3]; //b, r, y
 bool boxContainsOrder[4] = {false, false, false, false};
 int currentBox;
