@@ -1,0 +1,4 @@
+int8 amount
+---
+int8 id
+string ticket
