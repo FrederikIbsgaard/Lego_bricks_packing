@@ -18,17 +18,23 @@ RGB = "RGB"
 HSV = "HSV"
 
 # Path to configuration files
-PATH_TO_CONF_CROPPING_JSON = os.path.expanduser(
-    "~/catkin_ws/src/Lego_bricks_packing/src/vision/conf/Cropping_values.json")
+PATH_TO_CONF_CROPPING_JSON_RED = os.path.expanduser(
+    "../conf/Cropping_values_red.json")
+PATH_TO_CONF_CROPPING_JSON_BLUE = os.path.expanduser(
+    "../conf/Cropping_values_blue.json")
+PATH_TO_CONF_CROPPING_JSON_YELLOW = os.path.expanduser(
+    "../conf/Cropping_values_yellow.json")
 PATH_TO_CONF_HSV_JSON = os.path.expanduser(
-    "~/catkin_ws/src/Lego_bricks_packing/src/vision/conf/HSV_thresholds.json")
+    "../conf/HSV_thresholds.json")
 PATH_TO_CONF_RGB_JSON = os.path.expanduser(
-    "~/catkin_ws/src/Lego_bricks_packing/src/vision/conf/RGB_thresholds.json")
+    "../conf/RGB_thresholds.json")
 
 
-def setPathsToConfigurationFiles(path_to_cropping_conf, path_to_hsv_conf, path_to_rgb_conf):
+def setPathsToConfigurationFiles(path_to_cropping_conf_red,path_to_cropping_conf_blue,path_to_cropping_conf_yellow, path_to_hsv_conf, path_to_rgb_conf):
     # Path to configuration files
-    PATH_TO_CONF_CROPPING_JSON = os.path.expanduser(path_to_cropping_conf)
+    PATH_TO_CONF_CROPPING_JSON_RED = os.path.expanduser(path_to_cropping_conf_red)
+    PATH_TO_CONF_CROPPING_JSON_BLUE = os.path.expanduser(path_to_cropping_conf_blue)
+    PATH_TO_CONF_CROPPING_JSON_YELLOW = os.path.expanduser(path_to_cropping_conf_yellow)
     PATH_TO_CONF_HSV_JSON = os.path.expanduser(path_to_hsv_conf)
     PATH_TO_CONF_RGB_JSON = os.path.expanduser(path_to_rgb_conf)
 
@@ -238,10 +244,15 @@ def getConfigurationValues(key, option):
         return INVALID_COLOR_OPTION, []
 
 
-def cropImage(image):
+def cropImage(image,color):
 
     # load Json file:
-    state, obj_json = loadJson(PATH_TO_CONF_CROPPING_JSON)
+    if VALID_COLORS[0] == color:
+    	state, obj_json = loadJson(PATH_TO_CONF_CROPPING_JSON_RED)
+    elif VALID_COLORS[1] == color:
+    	state, obj_json = loadJson(PATH_TO_CONF_CROPPING_JSON_YELLOW)
+    elif VALID_COLORS[2] == color:
+    	state, obj_json = loadJson(PATH_TO_CONF_CROPPING_JSON_BLUE)
 
     if state == SUCCESS:
 
