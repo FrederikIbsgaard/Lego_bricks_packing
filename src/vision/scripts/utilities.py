@@ -182,7 +182,7 @@ def updateColorConfigurationJson(key, values, option):
     if key == "red" or key == "yellow" or key == "blue":
 
         print("INFO: Updating the Json file")
-        
+
         # load json
         state = []
         configuration  = []
@@ -193,7 +193,7 @@ def updateColorConfigurationJson(key, values, option):
             state, obj_json = loadJson(PATH_TO_CONF_HSV_JSON)
         else:
             print(INVALID_COLORSPACE_OPTION)
-        
+
 
         if state == SUCCESS:
 
@@ -225,7 +225,7 @@ def getConfigurationValues(key, option):
         elif option == HSV:
             state, obj_json = loadJson(PATH_TO_CONF_HSV_JSON)
         else:
-            print(INVALID_COLORSPACE_OPTION) 
+            print(INVALID_COLORSPACE_OPTION)
             return INVALID_COLORSPACE_OPTION, []
 
         if state == SUCCESS:
@@ -297,10 +297,10 @@ def filterRGB(image, color):
 
 
 def getColor(image, option):
-    
+
     for color in VALID_COLORS:
 
-        state = [] 
+        state = []
         configuration  = []
         filtered_image = []
 
@@ -318,7 +318,7 @@ def getColor(image, option):
         upper_bound = np.array(
             [configuration[1], configuration[3], configuration[5]])
 
-        
+
         avg = getAverageColor(filtered_image, option)
 
         if avg[0] >= configuration[0] and avg[0] <= configuration[1] and avg[1] >= configuration[2] and avg[1] <= configuration[3] and avg[2] >= configuration[4] and avg[2] <= configuration[5]:
@@ -326,8 +326,8 @@ def getColor(image, option):
             #print("INFO: Threshold and currrent values")
             #print("\tcurrent = " + str(int(avg[0])) + " Threshold values [" + str(configuration[0]) + " , " + str(configuration[1]) + "]")
             #print("\tcurrent = " + str(int(avg[1])) + " Threshold values [" + str(configuration[2]) + " , " + str(configuration[3]) + "]")
-            #print("\tcurrent = " + str(int(avg[2])) + " Threshold values [" + str(configuration[4]) + " , " + str(configuration[5]) + "]")           
-           
+            #print("\tcurrent = " + str(int(avg[2])) + " Threshold values [" + str(configuration[4]) + " , " + str(configuration[5]) + "]")
+
             return color
 
     print("INFO: predominant color  doesn't match any color")
@@ -338,7 +338,7 @@ def getAverageColor(image, option):
 
     if option == HSV:
 
-        # Convert output image to hsv space to be able to compare with the threshold values        
+        # Convert output image to hsv space to be able to compare with the threshold values
         output = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         valid_points = np.array([0, 0, 0])
         for points in output:
