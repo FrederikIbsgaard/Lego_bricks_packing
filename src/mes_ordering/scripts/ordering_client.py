@@ -96,7 +96,7 @@ def post_pml(PML_State):
               'comment': ""})
 
     if response.status_code == 201:
-        print(PML_State)
+        print("PackML", PML_State)
         # Convert response to json/dictionary
         entry = json.loads(response.text)
         entry['log_entry']

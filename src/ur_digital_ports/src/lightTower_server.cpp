@@ -4,15 +4,15 @@
 #include <rtde_io_interface.h>
 #include "ros/ros.h"
 #include "std_msgs/String.h"
-#include "ur_io/digitalOut_srv.h"
+#include "ur_digital_ports/digitalOut_srv.h"
 
 #define RED_PORT 0
 #define AMBER_PORT 1
-#define GREEN_PORT 2
+#define GREEN_PORT 3
 
 //using namespace ur_rtde;
 unsigned int redAction = 0, amberAction = 0, greenAction = 0;
-
+ur_rtde::RTDEIOInterface rtde_io("192.168.42.12");
 // Reset everything at start
 void pmlState(const std_msgs::String::ConstPtr& msg){
 	std::string msgs = msg->data.c_str();
@@ -60,8 +60,18 @@ void pmlState(const std_msgs::String::ConstPtr& msg){
 
 void lightOn(int port, int state){
 	ROS_INFO("Light. Port: %d, State: %d", port, state);
+	ur_rtde::RTDEIOInterface rtde_io("192.168.42.12");
+	rtde_io.setStandardDigitalOut(port, state);
+}
+
+void lightT(int redS, int amberS, int greenS){
+	ROS_INFO("Red: %d, Amber: %d, Green: %d", redS, amberS, greenS);
 	//ur_rtde::RTDEIOInterface rtde_io("192.168.42.12");
-	//rtde_io.setStandardDigitalOut(port, state);
+	rtde_io.setStandardDigitalOut(RED_PORT, redS);
+	//usleep(500);
+	rtde_io.setStandardDigitalOut(AMBER_PORT, amberS);
+	//usleep(500);
+	rtde_io.setStandardDigitalOut(GREEN_PORT, greenS);
 }
 
 
@@ -80,7 +90,7 @@ int main(int argc, char **argv){
 
 	while(ros::ok() and ros::master::check()){
 		ros::spinOnce();
-		ROS_INFO("Red: %d, Amber: %d, Green: %d", redAction, amberAction, greenAction);
+		//ROS_INFO("Red: %d, Amber: %d, Green: %d", redAction, amberAction, greenAction);
 		
 		//Sync up the amber and green light
 		if((amberAction == 2) and (greenAction == 2)){
@@ -90,50 +100,50 @@ int main(int argc, char **argv){
 		// Red Light
 		if((redAction == 1) and (redCurState != true)){
 			redCurState = true;
-			lightOn(RED_PORT, redCurState);
+			//lightOn(RED_PORT, redCurState);
 		}
 		else if(redAction == 2){
 			redCurState = !redCurState;
-			lightOn(RED_PORT, redCurState);
+			//lightOn(RED_PORT, redCurState);
 		}
 		else if((redAction == 0) and (redCurState == true)){
 			redCurState = false;
-			lightOn(RED_PORT, redCurState);
+			//lightOn(RED_PORT, redCurState);
 		}
 
 		// Amber Light
 		if((amberAction == 1) and (amberCurState != true)){
 			amberCurState = true;
-			lightOn(AMBER_PORT, amberCurState);
+			//lightOn(AMBER_PORT, amberCurState);
 		}
 		else if(amberAction == 2){
 			amberCurState = !amberCurState;
-			lightOn(AMBER_PORT, amberCurState);
+			//lightOn(AMBER_PORT, amberCurState);
 		}
 		else if((amberAction == 0) and (amberCurState == true)){
 			amberCurState = false;
-			lightOn(AMBER_PORT, amberCurState);
+			//lightOn(AMBER_PORT, amberCurState);
 		}
 
 		// Green Light
 		if((greenAction == 1) and (greenCurState != true)){
 			greenCurState = true;
-			lightOn(GREEN_PORT, greenCurState);
+			//lightOn(GREEN_PORT, greenCurState);
 		}
 		else if(greenAction == 2){
 			greenCurState = !greenCurState;
-			lightOn(GREEN_PORT, greenCurState);
+			//lightOn(GREEN_PORT, greenCurState);
 		}
 		else if((greenAction == 0) and (greenCurState == true)){
 			greenCurState = false;
-			lightOn(GREEN_PORT, greenCurState);
+			//lightOn(GREEN_PORT, greenCurState);
 		}
 
-		
+		lightT(redCurState, amberCurState, greenCurState);
 
 		ROS_INFO("i = %d", i);
 		i += 1;
-		sleep(1);
+		usleep(600000);
 	}
 
   return 0;
