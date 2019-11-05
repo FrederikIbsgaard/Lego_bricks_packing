@@ -1,6 +1,151 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <!-- ROS Stuff-->
+    <meta charset="utf-8" />
+
+    <script type="text/javascript" src="http://static.robotwebtools.org/EventEmitter2/current/eventemitter2.min.js"></script>
+    <script type="text/javascript" src="http://static.robotwebtools.org/roslibjs/current/roslib.min.js"></script>
+
+    <script type="text/javascript" type="text/javascript">
+        // Connecting to ROS
+        // -----------------
+      
+        var ros = new ROSLIB.Ros({
+          url : 'ws://localhost:9090'
+        });
+      
+        ros.on('connection', function() {
+          console.log('Connected to websocket server.');
+        });
+      
+        ros.on('error', function(error) {
+          console.log('Error connecting to websocket server: ', error);
+        });
+      
+        ros.on('close', function() {
+          console.log('Connection to websocket server closed.');
+        });
+
+        // Play button:
+        var playPub = new ROSLIB.Topic(
+            {
+            ros : ros,
+            name : '/gui_play',
+            messageType : 'std_msgs/Empty'
+            });
+
+        var playMsg = new ROSLIB.Message();
+
+        function playBtnPres()
+        {
+            playPub.publish(playMsg);
+            return true;
+        }
+
+        // Pause button:
+        var pausePub = new ROSLIB.Topic(
+            {
+            ros : ros,
+            name : '/gui_pause',
+            messageType : 'std_msgs/Empty'
+            });
+
+        var pauseMsg = new ROSLIB.Message();
+
+        function pauseBtnPres()
+        {
+            pausePub.publish(pauseMsg);
+            return true;
+        }
+
+        // Stop button:
+        var stopPub = new ROSLIB.Topic(
+            {
+            ros : ros,
+            name : '/gui_stop',
+            messageType : 'std_msgs/Empty'
+            });
+
+        var stopMsg = new ROSLIB.Message();
+
+        function stopBtnPres()
+        {
+            stopPub.publish(stopMsg);
+            return true;
+        }
+
+        // Reset button:
+        var resetPub = new ROSLIB.Topic(
+            {
+            ros : ros,
+            name : '/gui_reset',
+            messageType : 'std_msgs/Empty'
+            });
+
+        var resetMsg = new ROSLIB.Message();
+
+        function resetBtnPres()
+        {
+            resetPub.publish(resetMsg);
+            return true;
+        }
+
+        // Get order no:
+        var orderNoSub = new ROSLIB.Topic({
+            ros : ros,
+            name : '/order_no',
+            messageType : 'std_msgs/Int16'
+        });
+
+        orderNoSub.subscribe(function(message)
+        {
+            document.getElementById("order_no").innerHTML = message.data;
+            return true;
+        });
+
+        //Get # blue bricks:
+        var blueNoSub = new ROSLIB.Topic({
+            ros : ros,
+            name : '/no_of_blue_bricks',
+            messageType : 'std_msgs/Int16'
+        });
+
+        blueNoSub.subscribe(function(message)
+        {
+            document.getElementById("blue_bricks").innerHTML = message.data;
+            return true;
+        });
+        
+        //Get # red bricks:
+        var redNoSub = new ROSLIB.Topic({
+            ros : ros,
+            name : '/no_of_red_bricks',
+            messageType : 'std_msgs/Int16'
+        });
+
+        redNoSub.subscribe(function(message)
+        {
+            document.getElementById("red_bricks").innerHTML = message.data;
+            return true;
+        });
+
+        //Get # yellow bricks:
+        var yellowNoSub = new ROSLIB.Topic({
+            ros : ros,
+            name : '/no_of_yellow_bricks',
+            messageType : 'std_msgs/Int16'
+        });
+
+        yellowNoSub.subscribe(function(message)
+        {
+            document.getElementById("yellow_bricks").innerHTML = message.data;
+            return true;
+        });
+        
+
+    </script>
+    
     <link rel="stylesheet" type="text/css" href="stylesheet.css">
     <title>Brick packer, RSD Inc.</title>
 </head>
@@ -8,6 +153,20 @@
         <div id="my_container">
             <div id="oee_container">
                 <h1 id="oee_title">OEE</h1>
+                <table>
+                    <tr>
+                        <td>Good</td><td id="good_cell"></td>
+                    </tr>
+                    <tr>
+                        <td>Reject</td><td></td>
+                    </tr>
+                    <tr>
+                        <td>Rate</td><td></td>
+                    </tr>
+                    <tr>
+                        <td>Cycle</td><td></td>
+                    </tr>
+                </table>
             </div>
             <div id="packml_diagram_container">
                 <img src="../img/packml.png">
@@ -16,24 +175,16 @@
         <div id="controls">
             <p class="status_text">Status:</p><p class="status_value">Ready</p>
             <div id="buttons">
-                <form id="play_btn" action="" method="post" name="play">
-                        <button type="submit" formmethod="post"><img src="../icons/play-circle-solid.svg" /></button>
-                </form>
-                <form id="pause_btn" action="" method="post" name="pause">
-                        <button type="submit" formmethod="post"><img src="../icons/pause-circle-solid.svg" /></button>
-                </form>
-                <form id="stop_btn" action="" method="post" name="stop">
-                        <button type="submit" formmethod="post"><img src="../icons/stop-circle-solid.svg" /></button>
-                </form>
-                <form id="reset_btn" action="" method="post" name="stop">
-                        <button type="submit" formmethod="post"><img src="../icons/reset-solid.svg" /></button>
-                </form>
+                        <button id="play_btn" onclick="playBtnPres()"><img src="../icons/play-circle-solid.svg" /></button>
+                        <button id="pause_btn" onclick="pauseBtnPres()"><img src="../icons/pause-circle-solid.svg" /></button>
+                        <button id="stop_btn" onclick="stopBtnPres()"><img src="../icons/stop-circle-solid.svg" /></button>
+                        <button id="reset_btn" onclick="resetBtnPres()""><img src="../icons/reset-solid.svg" /></button>
             </div>
             <div id="current_order_container">
-                <p class="order_stats_text">Current order #:</p><p class="order_stats_value">XXXX</p></br></br></br>
-                <div class="bricks_stats" id="blue_bricks">42</div>
-                <div class="bricks_stats" id="red_bricks">42</div>
-                <div class="bricks_stats" id="yellow_bricks">42</div>
+                <p class="order_stats_text">Current order #:</p><p id="order_no" class="order_stats_value">----</p></br></br></br>
+                <div class="bricks_stats" id="blue_bricks">-</div>
+                <div class="bricks_stats" id="red_bricks">-</div>
+                <div class="bricks_stats" id="yellow_bricks">-</div>
             </div>
         </div>
 </body>
