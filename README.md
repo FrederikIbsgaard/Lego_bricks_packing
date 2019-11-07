@@ -9,3 +9,5 @@ sudo apt install ros-melodic-rosbridge-server
 sudo apt install ros-melodic-tf2-web-republisher
 ```
   
+To make robot work, add the following below line 7, in universal_robot/ur5_e_moveit_config/launch/ur5_e_moveit_planning_execution.launch
+    <remap unless="$(arg sim)" from="/follow_joint_trajectory" to="/scaled_pos_traj_controller/follow_joint_trajectory"/>
