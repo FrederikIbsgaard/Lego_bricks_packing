@@ -2,7 +2,7 @@
 
 import sys
 import rospy
-from mes_system.srv import *
+from mes_ordering.srv import *
 
 
 def get_order():
@@ -33,6 +33,7 @@ if __name__ == "__main__":
     print("Requested order")
     order = get_order()
     print("Id:", order.id, "Ticket:", order.ticket)
+    print("blue:", order.blue, "red", order.red, "yellow", order.yellow)
     response = delete_order(order.id, order.ticket)
     print(response.msg)
     print("Done")

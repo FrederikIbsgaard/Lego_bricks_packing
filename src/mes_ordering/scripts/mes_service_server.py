@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from mes_system.srv import GetOrder_srv, GetOrder_srvResponse, DeleteOrder_srv, DeleteOrder_srvResponse
+from mes_ordering.srv import GetOrder_srv, GetOrder_srvResponse, DeleteOrder_srv, DeleteOrder_srvResponse
 from ordering_client import get_orders, choose_order, reserve_order, get_order_info, delete_order
 import rospy
 
@@ -23,10 +23,14 @@ def ordering(req):
                 for i in range(len(orders_data)):
                     if orders_data[i]['id'] == id:
                         get_order_info(id, orders_data[i])
+                        orderInfo = orders_data[i]
                         break
-            return GetOrder_srvResponse(id, ticket)
+            return GetOrder_srvResponse(id, ticket,
+                                        orderInfo['blue'],
+                                        orderInfo['red'],
+                                        orderInfo['yellow'])
 
-    return GetOrder_srvResponse(0, "None")
+    return GetOrder_srvResponse(0, "None", 0, 0, 0)
 
 
 def deleting(req):
