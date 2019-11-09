@@ -7,8 +7,8 @@
 
 //using namespace ur_rtde;
 
-bool toolOut(ur_io::digitalOut_srv::Request  &req,
-         ur_io::digitalOut_srv::Response &res)
+bool toolOut(ur_digital_ports::digitalOut_srv::Request  &req,
+         ur_digital_ports::digitalOut_srv::Response &res)
 {
 	// The constructor simply takes the IP address of the Robot
 	ROS_INFO("request: port=%ld, state=%ld", (long int)req.port, (long int)req.state);
