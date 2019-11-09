@@ -2,7 +2,10 @@
 
 from mes_ordering.srv import GetOrder_srv, GetOrder_srvResponse, DeleteOrder_srv, DeleteOrder_srvResponse
 from ordering_client import get_orders, choose_order, reserve_order, get_order_info, delete_order
+from mes_ordering.msg import orderInfoMsg
 import rospy
+
+pub = rospy.Publisher('order_info', orderInfoMsg, queue_size=10)
 
 
 def ordering(req):
@@ -25,6 +28,8 @@ def ordering(req):
                         get_order_info(id, orders_data[i])
                         orderInfo = orders_data[i]
                         break
+            pub.publish(id, orderInfo['blue'],
+                        orderInfo['red'], orderInfo['yellow'])
             return GetOrder_srvResponse(id, ticket,
                                         orderInfo['blue'],
                                         orderInfo['red'],
