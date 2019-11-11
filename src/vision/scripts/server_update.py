@@ -20,34 +20,50 @@ import logging
 import subprocess
 logging.basicConfig()
 log = logging.getLogger()
-log.setLevel(logging.DEBUG)
 
 
-def updating_writer(a):
-    log.debug("updating the context")
+def updating_server(a):
+
+	# Configure the registers to be used
     context = a[0]
     register = 3
     slave_id = 0x00
-    address = 0x10
-    values = context[slave_id].getValues(register, address, count=1)
-    #values = [v + 1 for v in values]
-    log.debug("new values: " + str(values))
+    address = utilities_modbus.ADDRESS
+
+    # Read the register values
+    values = context[slave_id].getValues(register, address, count=2)
     context[slave_id].setValues(register, address, values)
 
     if(values[0]== utilities_modbus.GET_BRICK_COLOR_BLUE):
-        checkColor('blue')
-        values[0]=0
-        context[slave_id].setValues(register, address, values)
+        if checkColor(utilities_modbus.BLUE_BRICK):
+            values[1]=utilities_modbus.RESULT_COLOR_MATCH
+        else:
+            values[1]=utilities_modbus.RESULT_COLOR_MISMATCH
+
     elif(values[0]== utilities_modbus.GET_BRICK_COLOR_RED):
-        checkColor('red')
-        values[0]=0
-        context[slave_id].setValues(register, address, values)
+        if checkColor(utilities_modbus.RED_BRICK):
+            values[1]=utilities_modbus.RESULT_COLOR_MATCH
+        else:
+            values[1]=utilities_modbus.RESULT_COLOR_MISMATCH 
+
     elif(values[0]== utilities_modbus.GET_BRICK_COLOR_YELLOW):
-        checkColor('yellow')
-        values[0]=0
-        context[slave_id].setValues(register, address, values)
+        if checkColor(utilities_modbus.YELLOW_BRICK):
+            values[1]=utilities_modbus.RESULT_COLOR_MATCH
+        else:
+            values[1]=utilities_modbus.RESULT_COLOR_MISMATCH
+    
+    elif(values[0]== utilities_modbus.GET_BRICK_COLOR_WAIT):
+        print('INFO: Waiting for order')
+        values[1]=utilities_modbus.RESULT_WAIT
+
     else:
         print('ERROR: Invalid value in the register')
+        values[1]=utilities_modbus.RESULT_WAIT
+
+
+    # Reset register value:
+    values[0]=utilities_modbus.GET_BRICK_COLOR_WAIT
+    context[slave_id].setValues(register, address, values)
 
 
 camera = PiCamera()
@@ -66,17 +82,21 @@ def getImageFromPicam(resolution):
 def checkColor(expected_color):
     print('INFO: Checking for color: ' + expected_color)
     image = getImageFromPicam([640,480])
+    utilities_vision.saveImage(image, "images/step_0")
   
-    output = utilities_vision.cropImage(image, expected_color)  
+    output = utilities_vision.cropImage(image, expected_color)
+    utilities_vision.saveImage(output, "images/step_1")
+ 
     color = utilities_vision.getColor(output,utilities_vision.HSV,expected_color)
-    utilities_vision.saveImage(output, "temp")
 
     if(expected_color == color):
-        print("INFO: The color matches: " + color)
+        print("INFO: The color matches: " + expected_color)
+        return True
     else:
-        print("INFO: The color doesn't match: " + color)
+        print("INFO: The color doesn't match: " + expected_color)
+        return False
 
-def run_updating_server():
+def run_PiCam_server():
     # ----------------------------------------------------------------------- # 
     # initialize your data store
     # ----------------------------------------------------------------------- # 
@@ -84,7 +104,7 @@ def run_updating_server():
     store = ModbusSlaveContext(
         di=ModbusSequentialDataBlock(0, [1]*100),
         co=ModbusSequentialDataBlock(0, [17]*100),
-        hr=ModbusSequentialDataBlock(0, [2]*100),
+        hr=ModbusSequentialDataBlock(0, [0]*100),
         ir=ModbusSequentialDataBlock(0, [17]*100))
     context = ModbusServerContext(slaves=store, single=True)
     
@@ -92,21 +112,17 @@ def run_updating_server():
     # initialize the server information
     # ----------------------------------------------------------------------- # 
     identity = ModbusDeviceIdentification()
-    identity.VendorName = 'pymodbus'
-    identity.ProductCode = 'PM'
-    identity.VendorUrl = 'http://github.com/bashwork/pymodbus/'
-    identity.ProductName = 'pymodbus Server'
-    identity.ModelName = 'pymodbus Server'
-    identity.MajorMinorRevision = '2.3.0'
+    identity.VendorName = 'Robot system design'
+    identity.ProductCode = 'PI'
     
     # ----------------------------------------------------------------------- # 
     # run the server you want
     # ----------------------------------------------------------------------- # 
     time = utilities_modbus.REGISTER_REFRESH_FREQUENCY
-    loop = LoopingCall(f=updating_writer, a=(context,))
+    loop = LoopingCall(f=updating_server, a=(context,))
     loop.start(time, now=False) # initially delay by time
     StartTcpServer(context, identity=identity, address=(utilities_modbus.IP, utilities_modbus.PORT))
 
 
 if __name__ == "__main__":
-    run_updating_server()
+    run_PiCam_server()

@@ -53,11 +53,11 @@ def addPaddingToMatchSize(roi, image_to_match):
         bottom = int((height_image-height_roi+1)/2)
 
     if((width_image-width_roi) % 2) == 0:
-        left = int((width_image-width_roi)/2)
-        right = int((width_image-width_roi)/2)
+        left = 10 #int((width_image-width_roi)/2)
+        right = 10 #int((width_image-width_roi)/2)
     else:
-        left = int((width_image-width_roi-1)/2)
-        right = int((width_image-width_roi+1)/2)
+        left = 10#int((width_image-width_roi-1)/2)
+        right = 10#int((width_image-width_roi+1)/2)
 
     output = cv2.copyMakeBorder(
         roi, top, bottom, left, right, cv2.BORDER_CONSTANT, value=[255, 255, 255])
@@ -88,7 +88,7 @@ def loadJson(filename):
     if filename == UNKNOWN_EXTENSION:
         print(
             "ERROR: The extension given to the file is not valid [ " + filename + " ], expected .json")
-        return UNKNOWN_EXTENSION, NULL_JSON
+        return UNKNOWN_EXTENSION, NULL_JSONe
     else:
         # Check that the file exists
         if os.path.isfile(filename) == True:
@@ -328,8 +328,6 @@ def getColor(image, option,expected_color):
             elif option == HSV:
                 state, configuration = getConfigurationValues(color,HSV)
                 filtered_image  = filterHSV(image,color)
-                cv2.imshow("Filtered", filtered_image)
-                #cv2.waitKey(0)
             else:
                 return INVALID_COLORSPACE_OPTION
             lower_bound = np.array(
@@ -363,6 +361,7 @@ def getAverageColor(image, option,color):
         # Construct mask
         mask = cv2.inRange(hsv, lower_bound, upper_bound)
         output = cv2.bitwise_and(image, image, mask=mask)
+        saveImage(output, "images/step_2")
         avg = np.sum(mask==255)
 
 
