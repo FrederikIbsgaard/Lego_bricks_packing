@@ -18,8 +18,7 @@
 
 std::mutex configLock;
 std::mutex robotMovingLock;
-bool newTarget;
-bool targetReached;
+bool robotMoving;
 
 std::string currentTarget;
 
@@ -63,36 +62,41 @@ int main(int argc, char** argv)
     gripper.request.pin = 4;
     gripper.request.state = 1.0;
 
-    newTarget = false;
-    targetReached = true;
-    bool validTarget = true;
+    bool validTarget;
+    std::string targetCopy;
 
     while(ros::ok())
     {
         configLock.lock();
-        if(newTarget)
-        {
+        targetCopy = currentTarget;
+        configLock.unlock();
+
+        if(targetCopy.size() > 0)
+        {    
             validTarget = true;
-            if(currentTarget.compare("graspSmall") == 0)
+            if(targetCopy.compare("graspSmall") == 0)
                 move_group.setJointValueTarget(graspSmall);
-            else if(currentTarget.compare("graspMedium") == 0)
+            else if(targetCopy.compare("graspMedium") == 0)
                 move_group.setJointValueTarget(graspMedium);
-            else if(currentTarget.compare("graspLarge") == 0)
+            else if(targetCopy.compare("graspLarge") == 0)
                 move_group.setJointValueTarget(graspLarge);
-            else if(currentTarget.compare("preGraspSmall") == 0)
+            else if(targetCopy.compare("preGraspSmall") == 0)
                 move_group.setJointValueTarget(preGraspSmall);
-            else if(currentTarget.compare("preGraspMedium") == 0)
+            else if(targetCopy.compare("preGraspMedium") == 0)
                 move_group.setJointValueTarget(preGraspMedium);
-            else if(currentTarget.compare("preGraspLarge") == 0)
+            else if(targetCopy.compare("preGraspLarge") == 0)
                 move_group.setJointValueTarget(preGraspLarge);
-            else if(currentTarget.compare("aboveBoxA") == 0)
+            else if(targetCopy.compare("aboveBoxA") == 0)
                 move_group.setJointValueTarget(aboveBoxA);
-            else if(currentTarget.compare("aboveDiscard") == 0)
+            else if(targetCopy.compare("aboveDiscard") == 0)
                 move_group.setJointValueTarget(aboveDiscard);
             else
             {
                 validTarget = false;
                 ROS_ERROR("Invalid configuration name.");
+                configLock.lock();
+                currentTarget = "";
+                configLock.unlock();
             }
 
             if(validTarget)
@@ -105,6 +109,9 @@ int main(int argc, char** argv)
                     ROS_INFO_STREAM("Moving to " << currentTarget);
                     move_group.move();
                     ROS_INFO("Finished moving.");
+                    configLock.lock();
+                    currentTarget = "";
+                    configLock.unlock();
 
                     //Check whether to open or close the gripper, depending on the conf.:
                     if(currentTarget.compare("aboveDiscard") == 0 || currentTarget.compare("aboveBoxA") == 0)
@@ -118,17 +125,6 @@ int main(int argc, char** argv)
                             //return -1;
                         }
                     }
-                    // else if(currentTarget.compare("preGraspSmall") == 0 || currentTarget.compare("preGraspMedium") == 0 || currentTarget.compare("preGraspLarge") == 0)
-                    // {
-                    //     //Open the gripper:
-                    //     ROS_INFO("Opening the gripper");
-                    //     gripper.request.state = 0.0;
-                    //     if(!urIoClient.call(gripper))
-                    //     {
-                    //         ROS_ERROR("Failed to contact gripper");
-                    //         return -1;
-                    //     }
-                    // }
                     else if(currentTarget.compare("graspSmall") == 0 || currentTarget.compare("graspMedium") == 0 || currentTarget.compare("graspLarge") == 0)
                     {
                         //Close the gripper:
@@ -144,36 +140,29 @@ int main(int argc, char** argv)
                 }
                 else
                     ROS_ERROR("Planning failed");
-
-                targetReached = true;
-                newTarget = false;
             }
         }
-        configLock.unlock();
-        ros::Duration(0.1).sleep();
     }
     return 0;
 }
 
 bool gotoConfig(robot_control::goto_config::Request &req, robot_control::goto_config::Response &res)
 {
-    ROS_INFO("Receiving new goal.");
-    configLock.lock();
-    if(targetReached)
+    while(true) //Wait for robot to finish movement
     {
-        newTarget = true;
-        currentTarget = req.config_name;
-        res.success = true;
+        configLock.lock();
+        if(currentTarget.size() == 0) //Robot has finished movement
+            break;
+        
         configLock.unlock();
-        return true;
+        ros::Duration(0.1).sleep();
     }
-    else
-    {
-        res.success = false;
-        configLock.unlock();
-        return false;
-    } 
     
+        currentTarget = req.config_name;
+        configLock.unlock();
+
+        res.success = true;
+        return true;
 }
 
 // bool initPaths(moveit::planning_interface::MoveGroupInterface &move_group)

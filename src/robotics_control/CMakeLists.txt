@@ -152,6 +152,7 @@ add_executable(${PROJECT_NAME}_ur_demo src/simple_demo.cpp)
 add_executable(print_pose_test src/print_pose_test.cpp)
 add_executable(pickup_demo_no_gripper src/pickup_demo_no_gripper.cpp)
 add_executable(robot_node src/robot_node.cpp)
+add_executable(robot_node_alt src/robot_node_alt.cpp)
 add_executable(packing_demo src/packing_demo.cpp)
 add_executable(waypoint_test src/waypoint_test.cpp)
 
@@ -174,6 +175,8 @@ target_link_libraries(print_pose_test ${catkin_LIBRARIES})
 target_link_libraries(pickup_demo_no_gripper ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 target_link_libraries(robot_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
+target_link_libraries(robot_node_alt ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 target_link_libraries(packing_demo ${catkin_LIBRARIES})
 

@@ -28,7 +28,7 @@ int main(int argc, char** argv)
         {
             ROS_ERROR("Failed to command robot.");
         }
-        ros::Duration(0.1).sleep();
+        //ros::Duration(0.1).sleep();
 
         robotCommand.request.config_name = "graspSmall";
         ROS_INFO_STREAM("Going to: " << robotCommand.request.config_name);
@@ -36,7 +36,7 @@ int main(int argc, char** argv)
         {
             ROS_ERROR("Failed to command robot.");
         }
-        ros::Duration(0.1).sleep();
+        //ros::Duration(0.1).sleep();
 
         robotCommand.request.config_name = "preGraspSmall";
         ROS_INFO_STREAM("Going to: " << robotCommand.request.config_name);
@@ -44,7 +44,7 @@ int main(int argc, char** argv)
         {
             ROS_ERROR("Failed to command robot.");
         }
-        ros::Duration(0.1).sleep();
+        //ros::Duration(0.1).sleep();
 
         if(rd() < randThresh) //Discard:
         {
@@ -64,7 +64,7 @@ int main(int argc, char** argv)
                 ROS_ERROR("Failed to command robot.");
             }
         }
-        ros::Duration(0.1).sleep();
+        ////ros::Duration(0.1).sleep();
 
         //Medium:
         robotCommand.request.config_name = "preGraspMedium";
@@ -73,7 +73,7 @@ int main(int argc, char** argv)
         {
             ROS_ERROR("Failed to command robot.");
         }
-        ros::Duration(0.1).sleep();
+        //ros::Duration(0.1).sleep();
 
         robotCommand.request.config_name = "graspMedium";
         ROS_INFO_STREAM("Going to: " << robotCommand.request.config_name);
@@ -81,7 +81,7 @@ int main(int argc, char** argv)
         {
             ROS_ERROR("Failed to command robot.");
         }
-        ros::Duration(0.1).sleep();
+        //ros::Duration(0.1).sleep();
 
         robotCommand.request.config_name = "preGraspMedium";
         ROS_INFO_STREAM("Going to: " << robotCommand.request.config_name);
@@ -89,7 +89,7 @@ int main(int argc, char** argv)
         {
             ROS_ERROR("Failed to command robot.");
         }
-        ros::Duration(0.1).sleep();
+        //ros::Duration(0.1).sleep();
 
         if(rd() < randThresh) //Discard:
         {
@@ -109,7 +109,7 @@ int main(int argc, char** argv)
                 ROS_ERROR("Failed to command robot.");
             }
         }
-        ros::Duration(0.1).sleep();
+        //ros::Duration(0.1).sleep();
 
         //Large:
         robotCommand.request.config_name = "preGraspLarge";
@@ -118,7 +118,7 @@ int main(int argc, char** argv)
         {
             ROS_ERROR("Failed to command robot.");
         }
-        ros::Duration(0.1).sleep();
+        //ros::Duration(0.1).sleep();
 
         robotCommand.request.config_name = "graspLarge";
         ROS_INFO_STREAM("Going to: " << robotCommand.request.config_name);
@@ -126,7 +126,7 @@ int main(int argc, char** argv)
         {
             ROS_ERROR("Failed to command robot.");
         }
-        ros::Duration(0.1).sleep();
+        //ros::Duration(0.1).sleep();
 
         robotCommand.request.config_name = "preGraspLarge";
         ROS_INFO_STREAM("Going to: " << robotCommand.request.config_name);
@@ -134,7 +134,7 @@ int main(int argc, char** argv)
         {
             ROS_ERROR("Failed to command robot.");
         }
-        ros::Duration(0.1).sleep();
+        //ros::Duration(0.1).sleep();
 
         if(rd() < randThresh) //Discard:
         {
@@ -154,7 +154,7 @@ int main(int argc, char** argv)
                 ROS_ERROR("Failed to command robot.");
             }
         }
-        ros::Duration(0.1).sleep();
+        //ros::Duration(0.1).sleep();
     }
 
     return 0;
