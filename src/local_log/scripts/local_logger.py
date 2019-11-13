@@ -1,29 +1,41 @@
 #!/usr/bin/env python
 import mysql.connector
+from local_log.msg import system_log_msg
 import rospy
-from std_msgs.msg import String
-from local_log import local_logger
 
 mydb = mysql.connector.connect(
     host="localhost", user="logger", passwd="rsd2019", database="system_log")
 
-print(mydb)
-
 mycursor = mydb.cursor()
 
 sql_cmd = "INSERT INTO log (type, node_id, description) VALUES (%s, %s, %s)"
-val = ("Event", "TEST_ID", "This is a test")
 
-mycursor.execute(sql_cmd, val)
 
-mydb.commit()
+def post_log(data):
+    rospy.loginfo(rospy.get_caller_id() + "I heard %s, %s, %s",
+                  data.type, data.node_id, data.desc)
+    # LOG_type = data.type.replace(";", ".")
+    # LOG_node_id = data.node_id.replace(";", ".")
+    # LOG_desc = data.desc.replace(";", ".")
 
-print(mycursor.rowcount, "record inserted.")
-for x in mycursor:
-    print(x)
+    LOG_type = data.type
+    LOG_node_id = data.node_id
+    LOG_desc = data.desc
+
+    val = (LOG_type, LOG_node_id, LOG_desc)
+
+    mycursor.execute(sql_cmd, val)
+
+    mydb.commit()
+
 
 def log_listener():
-	rospy.init_node
+    rospy.init_node('system_logging', anonymous=True)
+
+    rospy.Subscriber('system_log', system_log_msg, post_log)
+    # spin() simply keeps python from exiting until this node is stopped
+    rospy.spin()
+
 
 if __name__ == '__main__':
-	log_listener()
+    log_listener()
