@@ -1,4 +1,5 @@
 int8 id
 string ticket
 ---
+int8 complete
 string msg

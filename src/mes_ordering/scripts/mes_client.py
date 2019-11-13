@@ -35,5 +35,6 @@ if __name__ == "__main__":
     print("Id:", order.id, "Ticket:", order.ticket)
     print("blue:", order.blue, "red", order.red, "yellow", order.yellow)
     response = delete_order(order.id, order.ticket)
+    print("Deletion:", response.complete)
     print(response.msg)
     print("Done")

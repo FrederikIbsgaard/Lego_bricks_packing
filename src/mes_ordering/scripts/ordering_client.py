@@ -80,11 +80,12 @@ def delete_order(id, ticket):
                   'comment': str(id)})
         # Convert response to json/dictionary
         entry = json.loads(response.text)
-        entry['log_entry']
+        return [1, entry['log_entry']]
     elif response.status_code == 400:
         # Convert response to json/dictionary
         data = json.loads(response.text)
         print("Deleting order:", data['message'])
+        return [0, data['message']]
 
 
 def post_pml(PML_State):

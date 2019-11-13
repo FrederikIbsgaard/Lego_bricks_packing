@@ -55,8 +55,9 @@ def ordering(req):
 
 def deleting(req):
     print("id:", req.id, "ticket:", req.ticket)
-    delete_order(req.id, req.ticket)
-    return DeleteOrder_srvResponse("Order Deleted")
+    del_info = delete_order(req.id, req.ticket)
+    print("Order deletion:", del_info[1])
+    return DeleteOrder_srvResponse(del_info[0], str(del_info[1]))
 
 
 def start_service():
