@@ -8,7 +8,7 @@
 
 #define RED_PORT 0
 #define AMBER_PORT 1
-#define GREEN_PORT 3
+#define GREEN_PORT 2
 
 //using namespace ur_rtde;
 unsigned int redAction = 0, amberAction = 0, greenAction = 0;
