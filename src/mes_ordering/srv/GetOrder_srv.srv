@@ -1,6 +1,6 @@
 int8 amount
 ---
-int8 id
+int16 id
 string ticket
 int8 blue
 int8 red
