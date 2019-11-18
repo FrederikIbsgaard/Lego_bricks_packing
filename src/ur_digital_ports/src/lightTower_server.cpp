@@ -79,7 +79,7 @@ int main(int argc, char **argv){
 	ros::init(argc, argv, "lightTower_server");
 	ros::NodeHandle n;
 
-	ros::Subscriber sub = n.subscribe("ur_lightTower_out", 10, pmlState);
+	ros::Subscriber sub = n.subscribe("packml_state", 10, pmlState);
 	//ros::ServiceServer service = n.advertiseService("ur_digital_out", testFunc);
 	ROS_INFO("Ready to use digital output.");
 	//ros::spin();
