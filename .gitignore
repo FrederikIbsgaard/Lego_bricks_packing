@@ -1,5 +1,6 @@
 **/build
 **/devel
+**/install
 **/cmake-build-debug
 **/.idea
 **/logs
@@ -7,3 +8,4 @@
 .catkin_tools/
 .catkin_workspace
 *.json
+
