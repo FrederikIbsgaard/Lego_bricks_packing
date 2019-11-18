@@ -109,9 +109,9 @@ def post_pml(PML_State):
 
 
 # Global variables
-# HOST = 'http://127.0.0.1:5000'
+HOST = 'http://127.0.0.1:5000'
 
-HOST = 'http://10.10.19.20'
+# HOST = 'http://10.10.19.20'
 
 CELL_ID = 8
 
