@@ -1,0 +1,4 @@
+<launch>
+    <node pkg="ur_digital_ports" type="lightTower_server" name="lightTower"/>
+</launch>
+
