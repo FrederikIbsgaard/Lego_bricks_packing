@@ -1,0 +1,4 @@
+<launch>
+    <node pkg="mes_ordering" type="mes_service_server.py" name="Ordering"/>
+</launch>
+
