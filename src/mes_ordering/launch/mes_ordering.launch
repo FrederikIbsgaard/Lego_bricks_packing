@@ -1,4 +1,5 @@
 <launch>
-    <node pkg="mes_ordering" type="mes_service_server.py" name="Ordering"/>
+    <node pkg="mes_ordering" type="mes_service_server.py" name="ordering"/>
+    <node pkg="mes_ordering" type="pml_log.py" name="packml_logger"/>
 </launch>
 
