@@ -32,4 +32,4 @@ if __name__ == "__main__":
 	
 		# Show results:
         cv2.imshow("Result",np.hstack([image_0, padded_1, padded_2]))
-        cv2.waitKey(100)
+        cv2.waitKey(1000)
