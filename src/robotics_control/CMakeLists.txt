@@ -155,6 +155,7 @@ add_executable(robot_node src/robot_node.cpp)
 add_executable(robot_node_alt src/robot_node_alt.cpp)
 add_executable(packing_demo src/packing_demo.cpp)
 add_executable(waypoint_test src/waypoint_test.cpp)
+add_executable(e_stop_test src/e_stop_test.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -181,6 +182,8 @@ target_link_libraries(robot_node_alt ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 target_link_libraries(packing_demo ${catkin_LIBRARIES})
 
 target_link_libraries(waypoint_test ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
+target_link_libraries(e_stop_test ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 #############
 ## Install ##
 #############
