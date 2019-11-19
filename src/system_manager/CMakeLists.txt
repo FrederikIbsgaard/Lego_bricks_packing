@@ -11,6 +11,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   message_generation
+  robot_control
+  vision
 )
 
 SET(CMAKE_BUILD_TYPE Release)

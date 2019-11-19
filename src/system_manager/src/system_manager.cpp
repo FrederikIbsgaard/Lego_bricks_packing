@@ -3,6 +3,7 @@
 
 //Services:
 #include "robot_control/goto_config.h"
+#include "vision/"
 
 //Topics:
 
