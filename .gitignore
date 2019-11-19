@@ -1,10 +1,22 @@
 **/build
 **/devel
+**/install
 **/cmake-build-debug
 **/.idea
+**/logs
 .vscode/
 .catkin_tools/
 .catkin_workspace
+<<<<<<< HEAD
 logs/
 .directory
 **/__pycache__
+=======
+*.json
+<<<<<<< HEAD
+*.pyc
+*.jpg
+=======
+
+>>>>>>> 04d85e983023eb004ca91e940d51cf31039b0ce4
+>>>>>>> Vision

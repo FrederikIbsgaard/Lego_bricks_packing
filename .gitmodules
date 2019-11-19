@@ -1,0 +1,3 @@
+[submodule "roslibpy"]
+	path = roslibpy
+	url = https://github.com/gramaziokohler/roslibpy.git
