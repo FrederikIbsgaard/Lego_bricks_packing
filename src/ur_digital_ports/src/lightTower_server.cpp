@@ -12,7 +12,7 @@
 
 //using namespace ur_rtde;
 unsigned int redAction = 0, amberAction = 0, greenAction = 0;
-ur_rtde::RTDEIOInterface rtde_io("192.168.42.12");
+ur_rtde::RTDEIOInterface rtde_io("192.168.0.12");
 // Reset everything at start
 void pmlState(const std_msgs::String::ConstPtr& msg){
 	std::string msgs = msg->data.c_str();
