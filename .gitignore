@@ -7,3 +7,5 @@
 .catkin_tools/
 .catkin_workspace
 *.json
+*.pyc
+*.jpg
