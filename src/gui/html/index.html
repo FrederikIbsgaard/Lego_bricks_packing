@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- ROS Stuff-->
+    <meta charset="utf-8" />
+
+    <script type="text/javascript" src="http://static.robotwebtools.org/EventEmitter2/current/eventemitter2.min.js"></script>
+    <script type="text/javascript" src="http://static.robotwebtools.org/roslibjs/current/roslib.min.js"></script>
+
+    <script type="text/javascript" type="text/javascript">
+        // Connecting to ROS
+        // -----------------
+      
+        var ros = new ROSLIB.Ros({
+          url : 'ws://localhost:9090'
+        });
+      
+        ros.on('connection', function() {
+          console.log('Connected to websocket server.');
+        });
+      
+        ros.on('error', function(error) {
+          console.log('Error connecting to websocket server: ', error);
+        });
+      
+        ros.on('close', function() {
+          console.log('Connection to websocket server closed.');
+        });
+
+        // Play button:
+        var playPub = new ROSLIB.Topic(
+            {
+            ros : ros,
+            name : '/gui_play',
+            messageType : 'std_msgs/Empty'
+            });
+
+        var playMsg = new ROSLIB.Message();
+
+        function playBtnPres()
+        {
+            playPub.publish(playMsg);
+            return true;
+        }
+
+        // Pause button:
+        var pausePub = new ROSLIB.Topic(
+            {
+            ros : ros,
+            name : '/gui_pause',
+            messageType : 'std_msgs/Empty'
+            });
+
+        var pauseMsg = new ROSLIB.Message();
+
+        function pauseBtnPres()
+        {
+            pausePub.publish(pauseMsg);
+            return true;
+        }
+
+        // Stop button:
+        var stopPub = new ROSLIB.Topic(
+            {
+            ros : ros,
+            name : '/gui_stop',
+            messageType : 'std_msgs/Empty'
+            });
+
+        var stopMsg = new ROSLIB.Message();
+
+        function stopBtnPres()
+        {
+            stopPub.publish(stopMsg);
+            return true;
+        }
+
+        // Reset button:
+        var resetPub = new ROSLIB.Topic(
+            {
+            ros : ros,
+            name : '/gui_reset',
+            messageType : 'std_msgs/Empty'
+            });
+
+        var resetMsg = new ROSLIB.Message();
+
+        function resetBtnPres()
+        {
+            resetPub.publish(resetMsg);
+            return true;
+        }
+
+        // Get order no:
+        var orderNoSub = new ROSLIB.Topic({
+            ros : ros,
+            name : '/order_no',
+            messageType : 'std_msgs/Int16'
+        });
+
+        orderNoSub.subscribe(function(message)
+        {
+            document.getElementById("order_no").innerHTML = message.data;
+            return true;
+        });
+
+        //Get # blue bricks:
+        var blueNoSub = new ROSLIB.Topic({
+            ros : ros,
+            name : '/no_of_blue_bricks',
+            messageType : 'std_msgs/Int16'
+        });
+
+        blueNoSub.subscribe(function(message)
+        {
+            document.getElementById("blue_bricks").innerHTML = message.data;
+            return true;
+        });
+        
+        //Get # red bricks:
+        var redNoSub = new ROSLIB.Topic({
+            ros : ros,
+            name : '/no_of_red_bricks',
+            messageType : 'std_msgs/Int16'
+        });
+
+        redNoSub.subscribe(function(message)
+        {
+            document.getElementById("red_bricks").innerHTML = message.data;
+            return true;
+        });
+
+        //Get # yellow bricks:
+        var yellowNoSub = new ROSLIB.Topic({
+            ros : ros,
+            name : '/no_of_yellow_bricks',
+            messageType : 'std_msgs/Int16'
+        });
+
+        yellowNoSub.subscribe(function(message)
+        {
+            document.getElementById("yellow_bricks").innerHTML = message.data;
+            return true;
+        });
+
+        // Get status:
+        var statusSub = new ROSLIB.Topic({
+            ros : ros,
+            name : '/system_status',
+            messageType : 'std_msgs/String'
+        });
+
+        statusSub.subscribe(function(message)
+        {
+            document.getElementById("status_val").innerHTML = message.data;
+            return true;
+        });
+
+        // Get PackML state:
+        var packmlSub = new ROSLIB.Topic({
+            ros : ros,
+            name : '/packml_state',
+            messageType : 'std_msgs/String'
+        });
+
+        packmlSub.subscribe(function(message)
+        {
+            console.log("Setting standard style on all states.");
+            var elementList = document.getElementsByClassName("states");
+
+            for(var i = 0; i < elementList.length; i++)
+            {
+                elementList[i].style = "fill: #ffffff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000;";
+            }
+
+            console.log("Getting packml diagram");
+            var diagram = document.getElementById("packml_diagram");
+            
+            console.log("Getting state element");
+            var state = diagram.getElementById(message.data);
+
+            console.log("Setting color to blue");
+            state.style = "fill: #00BFFF; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000;";
+            return true;
+        });
+        
+        //Show or hide log:
+        function setLogVis()
+        {
+            var checkbox = document.getElementById("show_log_checkbox");
+            var logContainer = document.getElementById("log_container");
+            var clearBtn = document.getElementById("clear_log_btn");
+
+            if(checkbox.checked)
+            {
+                logContainer.style = "background-color: #ffffff; width: 90%; height: 38%; visibility: visible; overflow-y: scroll; overflow-wrap: break-word;";
+                clearBtn.style = "margin-top: 5px; margin-bottom: 5px; height: 30px; width: 50px; background: #ffffff; color: #82ABA1; font-weight: bold; visibility: visible;";
+
+            }
+            else
+            {
+                logContainer.style = "background-color: #ffffff; width: 90%; height: 38%; visibility: hidden; overflow-y: scroll; overflow-wrap: break-word;";
+                clearBtn.style = "margin-top: 5px; margin-bottom: 5px; height: 30px; width: 50px; background: #ffffff; color: #82ABA1; font-weight: bold; visibility: hidden;";
+            }
+
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        //Clear log:
+        function clearLog()
+        {
+            if(confirm("Clear log?"))
+            {
+                document.getElementById("log_container").innerHTML = "";
+            }
+        }
+
+        //Subscribe to log topic:
+        var logSub = new ROSLIB.Topic({
+            ros : ros,
+            name : '/system_log',
+            messageType : 'std_msgs/String'
+        });
+
+        logSub.subscribe(function(message)
+        {
+            document.getElementById("log_container").innerHTML += message.data + "</br>";
+        });
+
+    </script>
+    
+    <link rel="stylesheet" type="text/css" href="stylesheet.css">
+    <title>Brick packer, RSD Inc.</title>
+</head>
+<body>
+        <div id="my_container">
+            <div id="oee_container">
+                <h1 id="oee_title">OEE</h1>
+                <table>
+                    <tr>
+                        <td class="oee_status_text">Availability</td><td id="avail_val" class="oee_status_value">-</td>
+                    </tr>
+                    <tr>
+                        <td class="oee_status_text">Performance</td><td id="perf_val" class="oee_status_value">-</td>
+                    </tr>
+                    <tr>
+                        <td class="oee_status_text">Quality</td><td id="qual_val" class="oee_status_value">-</td>
+                    </tr>
+                    <tr>
+                        <td class="oee_status_text">OEE</td><td id="oee_val" class="oee_status_value">-</td>
+                    </tr>
+                </table>
+            </br>
+                <input type="checkbox" id="show_log_checkbox" onclick="setLogVis()" checked><label id="checkbox_text">Show log</label></input>
+                <div id="log_container">
+                </div>
+                <button id="clear_log_btn" onclick="clearLog()">Clear</button>
+            </div>
+            <div id="packml_diagram_container">
+                <svg id="packml_diagram" width="35cm" height="20cm" viewBox="179 79 823 462" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                    <defs/>
+                    <g id="Background">
+                        <g>
+                        <line style="fill: none; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x1="916.375" y1="261.966" x2="915.923" y2="450.449"/>
+                        <polygon style="fill: #000000; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" fill-rule="evenodd" points="915.905,457.949 910.929,447.937 915.923,450.449 920.929,447.961 "/>
+                        </g>
+                        <polygon style="fill: #919098; fill-opacity: 1; stroke-opacity: 0; stroke-width: 2; stroke: #000000" fill-rule="evenodd" points="180,80 1000,80 1000,440 660,440 660,540 180,540 "/>
+                        <g>
+                        <line style="fill: none; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x1="435.582" y1="375.112" x2="435.115" y2="449.659"/>
+                        <polygon style="fill: #000000; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" fill-rule="evenodd" points="435.069,457.158 430.131,447.127 435.115,449.659 440.131,447.19 "/>
+                        </g>
+                        <rect style="fill: #dbd4d3; fill-opacity: 1; stroke-opacity: 1; stroke-width: 4; stroke: #000000" x="190" y="90" width="800" height="340" rx="0" ry="0"/>
+                        <g>
+                        <rect id="state_held" class="states" style="fill: #ffffff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x="541.244" y="122.551" width="54.15" height="39.6389" rx="0" ry="0"/>
+                        <text font-size="14.1109" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="568.319" y="146.651">
+                            <tspan x="568.319" y="146.651">Held</tspan>
+                        </text>
+                        </g>
+                        <g>
+                        <rect id="state_unholding" class="states" style="fill: #ffffff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x="351.682" y="122.551" width="98.65" height="39.6389" rx="0" ry="0"/>
+                        <text font-size="14.1109" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="401.007" y="146.651">
+                            <tspan x="401.007" y="146.651">Un-holding</tspan>
+                        </text>
+                        </g>
+                        <g>
+                        <rect id="state_holding" class="states" style="fill: #ffffff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x="709.063" y="122.551" width="75.9" height="39.6389" rx="0" ry="0"/>
+                        <text font-size="14.1109" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="747.013" y="146.651">
+                            <tspan x="747.013" y="146.651">Holding</tspan>
+                        </text>
+                        </g>
+                        <g>
+                        <rect id="state_completing" class="states" style="fill: #ffffff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x="690.288" y="221.435" width="103.15" height="39.6389" rx="0" ry="0"/>
+                        <text font-size="14.1109" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="741.862" y="245.535">
+                            <tspan x="741.862" y="245.535">Completing</tspan>
+                        </text>
+                        </g>
+                        <g>
+                        <rect id="state_execute" class="states" style="fill: #ffffff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x="520.775" y="221.435" width="91.55" height="39.6389" rx="0" ry="0"/>
+                        <text font-size="14.1109" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="566.55" y="245.535">
+                            <tspan x="566.55" y="245.535">Execute</tspan>
+                        </text>
+                        </g>
+                        <g>
+                        <rect id="state_starting" class="states" style="fill: #ffffff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x="364.513" y="221.435" width="78.3" height="39.6389" rx="0" ry="0"/>
+                        <text font-size="14.1109" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="403.663" y="245.535">
+                            <tspan x="403.663" y="245.535">Starting</tspan>
+                        </text>
+                        </g>
+                        <g>
+                        <rect id="state_complete" class="states" style="fill: #ffffff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x="871.4" y="221.435" width="90.05" height="39.6389" rx="0" ry="0"/>
+                        <text font-size="14.1109" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="916.425" y="245.535">
+                            <tspan x="916.425" y="245.535">Complete</tspan>
+                        </text>
+                        </g>
+                        <g>
+                        <rect id="state_idle" class="states" style="fill: #ffffff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x="235.3" y="221.435" width="51.25" height="39.6389" rx="0" ry="0"/>
+                        <text font-size="14.1109" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="260.925" y="245.535">
+                            <tspan x="260.925" y="245.535">Idle</tspan>
+                        </text>
+                        </g>
+                        <g>
+                        <rect id="state_suspending" class="states" style="fill: #ffffff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x="726.419" y="334.472" width="104.6" height="39.6389" rx="0" ry="0"/>
+                        <text font-size="14.1109" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="778.719" y="358.572">
+                            <tspan x="778.719" y="358.572">Suspending</tspan>
+                        </text>
+                        </g>
+                        <g>
+                        <rect id="state_suspended" class="states" style="fill: #ffffff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x="552.8" y="334.472" width="100.45" height="39.6389" rx="0" ry="0"/>
+                        <text font-size="14.1109" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="603.025" y="358.572">
+                            <tspan x="603.025" y="358.572">Suspended</tspan>
+                        </text>
+                        </g>
+                        <g>
+                        <rect id="state_unsuspending" class="states" style="fill: #ffffff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x="374.563" y="334.472" width="122.3" height="39.6389" rx="0" ry="0"/>
+                        <text font-size="14.1109" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="435.713" y="358.572">
+                            <tspan x="435.713" y="358.572">Unsuspending</tspan>
+                        </text>
+                        </g>
+                        <g>
+                        <rect id="state_resetting" class="states" style="fill: #ffffff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x="216.525" y="334.472" width="88.8" height="39.6389" rx="0" ry="0"/>
+                        <text font-size="14.1109" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="260.925" y="358.572">
+                            <tspan x="260.925" y="358.572">Resetting</tspan>
+                        </text>
+                        </g>
+                        <g>
+                        <rect id="state_aborted" class="states" style="fill: #ffffff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x="713.863" y="461.076" width="78.25" height="39.6389" rx="0" ry="0"/>
+                        <text font-size="14.1109" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="752.988" y="485.176">
+                            <tspan x="752.988" y="485.176">Aborted</tspan>
+                        </text>
+                        </g>
+                        <g>
+                        <rect id="state_clearing" class="states" style="fill: #ffffff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x="550.625" y="461.076" width="80.7" height="39.6389" rx="0" ry="0"/>
+                        <text font-size="14.1109" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="590.975" y="485.176">
+                            <tspan x="590.975" y="485.176">Clearing</tspan>
+                        </text>
+                        </g>
+                        <g>
+                        <rect id="state_stopping" class="states" style="fill: #ffffff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x="392.499" y="460.396" width="84.85" height="39.6389" rx="0" ry="0"/>
+                        <text font-size="14.1109" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="434.924" y="484.496">
+                            <tspan x="434.924" y="484.496">Stopping</tspan>
+                        </text>
+                        </g>
+                        <g>
+                        <rect id="state_aborting" class="states" style="fill: #ffffff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x="874.65" y="461.076" width="82.4" height="39.6389" rx="0" ry="0"/>
+                        <text font-size="14.1109" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="915.85" y="485.176">
+                            <tspan x="915.85" y="485.176">Aborting</tspan>
+                        </text>
+                        </g>
+                        <g>
+                        <rect id="state_stopped" class="states" style="fill: #ffffff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x="220" y="461.076" width="80.7" height="39.6389" rx="0" ry="0"/>
+                        <text font-size="14.1109" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="260.35" y="485.176">
+                            <tspan x="260.35" y="485.176">Stopped</tspan>
+                        </text>
+                        </g>
+                        <g>
+                        <line style="fill: none; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x1="260.444" y1="460.094" x2="260.786" y2="384.829"/>
+                        <polygon style="fill: #000000; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" fill-rule="evenodd" points="260.82,377.33 265.775,387.352 260.786,384.829 255.775,387.307 "/>
+                        </g>
+                        <g>
+                        <line style="fill: none; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x1="391.515" y1="480.384" x2="311.439" y2="480.697"/>
+                        <polygon style="fill: #000000; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" fill-rule="evenodd" points="303.939,480.726 313.919,475.687 311.439,480.697 313.958,485.687 "/>
+                        </g>
+                        <g>
+                        <line style="fill: none; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x1="260.925" y1="333.47" x2="260.925" y2="271.813"/>
+                        <polygon style="fill: #000000; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" fill-rule="evenodd" points="260.925,264.313 265.925,274.313 260.925,271.813 255.925,274.313 "/>
+                        </g>
+                        <g>
+                        <line style="fill: none; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x1="287.558" y1="241.255" x2="353.773" y2="241.255"/>
+                        <polygon style="fill: #000000; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" fill-rule="evenodd" points="361.273,241.255 351.273,246.255 353.773,241.255 351.273,236.255 "/>
+                        </g>
+                        <g>
+                        <line style="fill: none; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x1="443.788" y1="241.255" x2="510.037" y2="241.255"/>
+                        <polygon style="fill: #000000; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" fill-rule="evenodd" points="517.537,241.255 507.537,246.255 510.037,241.255 507.537,236.255 "/>
+                        </g>
+                        <g>
+                        <line style="fill: none; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x1="612.325" y1="241.255" x2="679.549" y2="241.255"/>
+                        <polygon style="fill: #000000; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" fill-rule="evenodd" points="687.049,241.255 677.049,246.255 679.549,241.255 677.049,236.255 "/>
+                        </g>
+                        <g>
+                        <line style="fill: none; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x1="794.41" y1="241.255" x2="860.832" y2="241.255"/>
+                        <polygon style="fill: #000000; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" fill-rule="evenodd" points="868.332,241.255 858.332,246.255 860.832,241.255 858.332,236.255 "/>
+                        </g>
+                        <g>
+                        <polyline style="fill: none; stroke-opacity: 1; stroke-width: 2; stroke: #000000" points="589.438,221.435 589.438,192.315 747.013,192.315 747.013,172.931 "/>
+                        <polygon style="fill: #000000; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" fill-rule="evenodd" points="747.013,165.431 752.013,175.431 747.013,172.931 742.013,175.431 "/>
+                        </g>
+                        <g>
+                        <line style="fill: none; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x1="708.076" y1="142.371" x2="606.134" y2="142.371"/>
+                        <polygon style="fill: #000000; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" fill-rule="evenodd" points="598.634,142.371 608.634,137.371 606.134,142.371 608.634,147.371 "/>
+                        </g>
+                        <g>
+                        <line style="fill: none; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x1="540.247" y1="142.371" x2="461.077" y2="142.371"/>
+                        <polygon style="fill: #000000; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" fill-rule="evenodd" points="453.577,142.371 463.577,137.371 461.077,142.371 463.577,147.371 "/>
+                        </g>
+                        <g>
+                        <polyline style="fill: none; stroke-opacity: 1; stroke-width: 2; stroke: #000000" points="401.007,163.195 401.007,192.315 543.663,192.315 543.663,211.699 "/>
+                        <polygon style="fill: #000000; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" fill-rule="evenodd" points="543.663,219.199 538.663,209.199 543.663,211.699 548.663,209.199 "/>
+                        </g>
+                        <polyline style="fill: none; stroke-opacity: 1; stroke-width: 2; stroke: #000000" points="916.425,262.077 916.425,400 260.637,400 260.637,417.594 "/>
+                        <g>
+                        <polyline style="fill: none; stroke-opacity: 1; stroke-width: 2; stroke: #000000" points="589.438,261.074 589.438,297.271 778.719,297.271 778.719,323.731 "/>
+                        <polygon style="fill: #000000; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" fill-rule="evenodd" points="778.719,331.231 773.719,321.231 778.719,323.731 783.719,321.231 "/>
+                        </g>
+                        <g>
+                        <line style="fill: none; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x1="725.423" y1="354.292" x2="663.987" y2="354.292"/>
+                        <polygon style="fill: #000000; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" fill-rule="evenodd" points="656.487,354.292 666.487,349.292 663.987,354.292 666.487,359.292 "/>
+                        </g>
+                        <g>
+                        <line style="fill: none; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x1="551.792" y1="354.292" x2="507.604" y2="354.292"/>
+                        <polygon style="fill: #000000; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" fill-rule="evenodd" points="500.104,354.292 510.104,349.292 507.604,354.292 510.104,359.292 "/>
+                        </g>
+                        <g>
+                        <polyline style="fill: none; stroke-opacity: 1; stroke-width: 2; stroke: #000000" points="435.713,333.467 435.713,297.271 543.663,297.271 543.663,270.81 "/>
+                        <polygon style="fill: #000000; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" fill-rule="evenodd" points="543.663,263.31 548.663,273.31 543.663,270.81 538.663,273.31 "/>
+                        </g>
+                        <polyline style="fill: none; stroke-opacity: 1; stroke-width: 2; stroke: #000000" points="590.975,501.719 590.975,530 346.609,530 346.609,480.559 "/>
+                        <g>
+                        <line style="fill: none; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x1="712.87" y1="480.896" x2="642.055" y2="480.896"/>
+                        <polygon style="fill: #000000; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" fill-rule="evenodd" points="634.555,480.896 644.555,475.896 642.055,480.896 644.555,485.896 "/>
+                        </g>
+                        <g>
+                        <line style="fill: none; stroke-opacity: 1; stroke-width: 2; stroke: #000000" x1="874.65" y1="480.896" x2="802.837" y2="480.896"/>
+                        <polygon style="fill: #000000; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000" fill-rule="evenodd" points="795.337,480.896 805.337,475.896 802.837,480.896 805.337,485.896 "/>
+                        </g>
+                    </g>
+                    </svg>                                
+            </div>
+        </div>
+        <div id="controls">
+            <p class="status_text">Status:</p><p class="status_value" id="status_val">Uninitialized</p>
+            <div id="buttons">
+                        <button id="play_btn" onclick="playBtnPres()"><img src="../icons/play-circle-solid.svg" /></button>
+                        <button id="pause_btn" onclick="pauseBtnPres()"><img src="../icons/pause-circle-solid.svg" /></button>
+                        <button id="stop_btn" onclick="stopBtnPres()"><img src="../icons/stop-circle-solid.svg" /></button>
+                        <button id="reset_btn" onclick="resetBtnPres()""><img src="../icons/reset-solid.svg" /></button>
+            </div>
+            <div id="current_order_container">
+                <p class="order_stats_text">Current order #:</p><p id="order_no" class="order_stats_value">----</p></br></br></br>
+                <div class="bricks_stats" id="blue_bricks">-</div>
+                <div class="bricks_stats" id="red_bricks">-</div>
+                <div class="bricks_stats" id="yellow_bricks">-</div>
+            </div>
+        </div>
+</body>
+</html>

@@ -1,9 +1,15 @@
 **/build
 **/devel
+**/install
 **/cmake-build-debug
 **/.idea
+**/logs
 .vscode/
 .catkin_tools/
 .catkin_workspace
 logs/
 .directory
+**/__pycache__
+*.json
+*.pyc
+*.jpg
