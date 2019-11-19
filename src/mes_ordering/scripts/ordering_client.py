@@ -93,7 +93,7 @@ def post_pml(PML_State):
     response = requests.post(
         HOST + '/log',
         json={'cell_id': CELL_ID,
-              'event': PML_State,
+              'event': "PML_" + PML_State,
               'comment': ""})
 
     if response.status_code == 201:
