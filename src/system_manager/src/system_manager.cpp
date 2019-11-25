@@ -3,7 +3,7 @@
 
 //Services:
 #include "robot_control/goto_config.h"
-#include "vision/"
+#include "vision/check_brick.h"
 
 //Topics:
 
@@ -56,9 +56,9 @@ int main(int argc, char** argv)
         ros::Duration(1).sleep();
 
         //Input fake order, for now:
-        currentOrderContents[0] = 3;
-        currentOrderContents[1] = 2;
-        currentOrderContents[2] = 3;
+        currentOrderContents[0] = 2;
+        currentOrderContents[1] = 5;
+        currentOrderContents[2] = 5;
 
         //Find the next available box:
         currentBox = 0;
@@ -98,24 +98,54 @@ int main(int argc, char** argv)
 
         ROS_INFO_STREAM("Packing in box " << currentBoxString);
 
+        ROS_INFO("Packing blue bricks");
         while(currentOrderContents[BLUE_BRICKS] > 0) //Pack all the blue bricks
         {
             //Ask robot to go to preSmall, then graspSmall (auto-grasps)
+            robCmd.request.config_name = "preGraspSmall";
+            ROS_INFO_STREAM("Moving to " << robCmd.request.config_name);
+            if(!robotClient.call(robCmd))
+            {
+                ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
+                return -1;
+            }
+
+            robCmd.request.config_name = "graspSmall";
+            ROS_INFO_STREAM("Moving to " << robCmd.request.config_name);
+            if(!robotClient.call(robCmd))
+            {
+                ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
+                return -1;
+            }
+
+            //Ask robot to go to preSmall
+            robCmd.request.config_name = "preGraspSmall";
+            ROS_INFO_STREAM("Moving to " << robCmd.request.config_name);
+            if(!robotClient.call(robCmd))
+            {
+                ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
+                return -1;
+            }
 
             //Ask vision system to validate brick:
             visCmd.request.color = "blue";
-
             if(!visClient.call(visCmd))
             {
                 ROS_ERROR("Vision service call failed!");
                 return -1;
             }
 
-            //Ask robot to go to preSmall
-
+            ROS_INFO_STREAM("Brick check result: " << (int)visCmd.response.result);
             if(visCmd.response.result == BRICK_MATCH)
             {
                 //Ask robot to go to currentBoxString
+                robCmd.request.config_name = currentBoxString;
+                if(!robotClient.call(robCmd))
+                {
+                    ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
+                    return -1;
+                }
+
                 //Ask vision system to validate brick:
                 if(!visClient.call(visCmd))
                 {
@@ -133,25 +163,72 @@ int main(int argc, char** argv)
             else
             {
                 //Ask robot to go to aboveDiscard
-                //Ask robot to open gripper
+                robCmd.request.config_name = "aboveDiscard";
+                if(!robotClient.call(robCmd))
+                {
+                    ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
+                    return -1;
+                }
             }
         }
 
-        while(currentOrderContents[RED_BRICKS] > 0) //Pack all the red bricks
+        ROS_INFO("Packing red bricks");
+        while(currentOrderContents[RED_BRICKS] > 0) //Pack all the blue bricks
         {
-            //Ask robot to go to preMedium, then graspMedium, then grasp
+            //Ask robot to go to preSmall, then graspMedium (auto-grasps)
+            robCmd.request.config_name = "preGraspMedium";
+            ROS_INFO_STREAM("Moving to " << robCmd.request.config_name);
+            if(!robotClient.call(robCmd))
+            {
+                ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
+                return -1;
+            }
 
-            //Ask vision system to validate brick
+            robCmd.request.config_name = "graspMedium";
+            ROS_INFO_STREAM("Moving to " << robCmd.request.config_name);
+            if(!robotClient.call(robCmd))
+            {
+                ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
+                return -1;
+            }
 
-            //Ask robot to go to preMedium
+            //Ask robot to go to preSmall
+            robCmd.request.config_name = "preGraspMedium";
+            ROS_INFO_STREAM("Moving to " << robCmd.request.config_name);
+            if(!robotClient.call(robCmd))
+            {
+                ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
+                return -1;
+            }
 
-            if(true /*brick is validated*/)
+            //Ask vision system to validate brick:
+            visCmd.request.color = "red";
+            if(!visClient.call(visCmd))
+            {
+                ROS_ERROR("Vision service call failed!");
+                return -1;
+            }
+
+            if(visCmd.response.result == BRICK_MATCH)
             {
                 //Ask robot to go to currentBoxString
-                //Ask vision system to validate brick
+                robCmd.request.config_name = currentBoxString;
+                if(!robotClient.call(robCmd))
+                {
+                    ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
+                    return -1;
+                }
+
+                //Ask vision system to validate brick:
+                if(!visClient.call(visCmd))
+                {
+                    ROS_ERROR("Vision service call failed!");
+                    return -1;
+                }
+
                 //Ask robot to open gripper
 
-                if(true /*brick is validated*/)
+                if(visCmd.response.result == BRICK_MATCH)
                     currentOrderContents[RED_BRICKS]--; //One less brick to pack :)
                 else
                     ROS_ERROR("No brick to drop!"); 
@@ -159,25 +236,70 @@ int main(int argc, char** argv)
             else
             {
                 //Ask robot to go to aboveDiscard
-                //Ask robot to open gripper
+                robCmd.request.config_name = "aboveDiscard";
+                if(!robotClient.call(robCmd))
+                {
+                    ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
+                    return -1;
+                }
             }
         }
 
+        ROS_INFO_STREAM("Packing" << currentOrderContents[YELLOW_BRICKS] << "yellow bricks");
         while(currentOrderContents[YELLOW_BRICKS] > 0) //Pack all the yellow bricks
         {
-            //Ask robot to go to preLarge, then graspLarge, then grasp
+            //Ask robot to go to preSmall, then graspLarge (auto-grasps)
+            robCmd.request.config_name = "preGraspLarge";
+            if(!robotClient.call(robCmd))
+            {
+                ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
+                return -1;
+            }
 
-            //Ask vision system to validate brick
+            robCmd.request.config_name = "graspLarge";
+            if(!robotClient.call(robCmd))
+            {
+                ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
+                return -1;
+            }
 
-            //Ask robot to go to preLarge
+            //Ask robot to go to preSmall
+            robCmd.request.config_name = "preGraspLarge";
+            if(!robotClient.call(robCmd))
+            {
+                ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
+                return -1;
+            }
 
-            if(true /*brick is validated*/)
+            //Ask vision system to validate brick:
+            visCmd.request.color = "yellow";
+
+            if(!visClient.call(visCmd))
+            {
+                ROS_ERROR("Vision service call failed!");
+                return -1;
+            }
+
+            if(visCmd.response.result == BRICK_MATCH)
             {
                 //Ask robot to go to currentBoxString
-                //Ask vision system to validate brick
+                robCmd.request.config_name = currentBoxString;
+                if(!robotClient.call(robCmd))
+                {
+                    ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
+                    return -1;
+                }
+
+                //Ask vision system to validate brick:
+                if(!visClient.call(visCmd))
+                {
+                    ROS_ERROR("Vision service call failed!");
+                    return -1;
+                }
+
                 //Ask robot to open gripper
 
-                if(true /*brick is validated*/)
+                if(visCmd.response.result == BRICK_MATCH)
                     currentOrderContents[YELLOW_BRICKS]--; //One less brick to pack :)
                 else
                     ROS_ERROR("No brick to drop!"); 
@@ -185,10 +307,17 @@ int main(int argc, char** argv)
             else
             {
                 //Ask robot to go to aboveDiscard
-                //Ask robot to open gripper
+                robCmd.request.config_name = "aboveDiscard";
+                if(!robotClient.call(robCmd))
+                {
+                    ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
+                    return -1;
+                }
             }
-            
         }
+
+        boxContainsOrder[currentBox] = true;
+
 
         //Now the order should be packed, notify MES-node:
         //Service-call to MES-node

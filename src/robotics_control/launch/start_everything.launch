@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!-- Start UR ROS driver -->
+    <include file="$(find ur_robot_driver)/launch/ur5e_bringup.launch">
+        <arg name="robot_ip" value="192.168.0.12"/>
+        <arg name="kinematics_config" value="$(find robot_control)/config/my_robot_calibration.yaml"/>
+    </include>
+
+
+    <!-- Start planning stuff -->
+    <include file="$(find ur5_e_moveit_config)/launch/ur5_e_moveit_planning_execution.launch"/>
+
+    <!-- Start robotics node -->
+    <node name="robot_node" pkg="robot_control" type="robot_node" output="screen"/>
+
+</launch>
