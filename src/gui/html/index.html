@@ -160,7 +160,7 @@
         var packmlSub = new ROSLIB.Topic({
             ros : ros,
             name : '/packml_state',
-            messageType : 'std_msgs/String'
+            messageType : 'std_msgs/Int8'
         });
 
         packmlSub.subscribe(function(message)
@@ -173,11 +173,70 @@
                 elementList[i].style = "fill: #ffffff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000;";
             }
 
+            //Find the state:
+            var element;
+            switch(message.data)
+            {
+                case 10:
+                    element = "state_aborting";
+                    break;
+                case 11:
+                    element = "state_aborted";
+                    break;
+                case 12:
+                    element = "state_clearing";
+                    break;
+                case 20:
+                    element = "state_stopping";
+                    break;
+                case 21:
+                    element = "state_stopped";
+                    break;
+                case 30:
+                    element = "state_resetting";
+                    break;
+                case 31:
+                    element = "state_idle";
+                    break;
+                case 32:
+                    element = "state_starting";
+                    break;
+                case 33:
+                    element = "state_execute";
+                    break;
+                case 34:
+                    element = "state_completing";
+                    break;
+                case 35:
+                    element = "state_complete";
+                    break;
+                case 40:
+                    element = "state_holding";
+                    break;
+                case 41:
+                    element = "state_held";
+                    break;
+                case 42:
+                    element = "state_unholding";
+                    break;
+                case 50:
+                    element = "state_suspending";
+                    break;
+                case 51:
+                    element = "state_suspended";
+                    break;
+                case 52:
+                    element = "state_unsuspending";
+                    break;
+                default:
+                    break;
+            }
+
             console.log("Getting packml diagram");
             var diagram = document.getElementById("packml_diagram");
             
             console.log("Getting state element");
-            var state = diagram.getElementById(message.data);
+            var state = diagram.getElementById(element);
 
             console.log("Setting color to blue");
             state.style = "fill: #00BFFF; fill-opacity: 1; stroke-opacity: 1; stroke-width: 2; stroke: #000000;";
@@ -227,6 +286,43 @@
             document.getElementById("log_container").innerHTML += message.data + "</br>";
         });
 
+
+        //Feeder warning:
+        var feederWarningSub = new ROSLIB.Topic({
+            ros : ros,
+            name : '/feeder_warning',
+            messageType : 'std_msgs/Empty'
+        });
+
+        feederWarningSub.subscribe(function(message)
+        {
+            alert("Feeders are almost empty!");
+            return true;
+        });
+
+        //Feeder alert:
+        var feederAlertSub = new ROSLIB.Topic({
+            ros : ros,
+            name : '/feeder_alert',
+            messageType : 'std_msgs/Empty'
+        });
+
+        //Feeder refilled pub.:
+        var feederRefillPub = new ROSLIB.Topic(
+        {
+            ros : ros,
+            name : '/feeder_refilled',
+            messageType : 'std_msgs/Empty'
+        });
+
+        var feederRefillMsg = new ROSLIB.Message();
+
+        feederAlertSub.subscribe(function(message)
+        {
+            alert("Feeders are empty! Please fill them up and press okay.");
+            feederRefillPub.publish(feederRefillMsg);
+            return true;
+        });
     </script>
     
     <link rel="stylesheet" type="text/css" href="stylesheet.css">
@@ -449,10 +545,10 @@
         <div id="controls">
             <p class="status_text">Status:</p><p class="status_value" id="status_val">Uninitialized</p>
             <div id="buttons">
-                        <button id="play_btn" onclick="playBtnPres()"><img src="../icons/play-circle-solid.svg" /></button>
-                        <button id="pause_btn" onclick="pauseBtnPres()"><img src="../icons/pause-circle-solid.svg" /></button>
-                        <button id="stop_btn" onclick="stopBtnPres()"><img src="../icons/stop-circle-solid.svg" /></button>
-                        <button id="reset_btn" onclick="resetBtnPres()""><img src="../icons/reset-solid.svg" /></button>
+                        <button id="play_btn" onclick="playBtnPres()" ><img src="../icons/play-circle-solid.svg" onmouseover="this.src='../icons/play_hover.svg';" onmouseout="this.src='../icons/play-circle-solid.svg';"/></button>
+                        <button id="pause_btn" onclick="pauseBtnPres()"><img src="../icons/pause-circle-solid.svg" onmouseover="this.src='../icons/pause_hover.svg';" onmouseout="this.src='../icons/pause-circle-solid.svg';"/></button>
+                        <button id="stop_btn" onclick="stopBtnPres()"><img src="../icons/stop-circle-solid.svg" onmouseover="this.src='../icons/stop_hover.svg';" onmouseout="this.src='../icons/stop-circle-solid.svg';"/></button>
+                        <button id="reset_btn" onclick="resetBtnPres()""><img src="../icons/reset-solid.svg"/></button>
             </div>
             <div id="current_order_container">
                 <p class="order_stats_text">Current order #:</p><p id="order_no" class="order_stats_value">----</p></br></br></br>

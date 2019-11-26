@@ -1,6 +1,9 @@
 #include <iostream>
 #include "ros/ros.h"
 
+#include <state.h>
+#include <std_msgs/Int8.h>
+
 //Services:
 #include "robot_control/goto_config.h"
 #include "vision/check_brick.h"
@@ -17,11 +20,15 @@ using namespace std;
 #define BRICK_NOMATCH 0
 #define BRICK_MATCH   1
 
+#define FEEDER_WARNING_THRESH 5
+
 //Order info:
 int currentOrderContents[3]; //blue, red, yellow
 bool boxContainsOrder[4] = {false, false, false, false};
 int currentOrderId;
 int currentOrderTicket;
+
+int feederEstimates[3] = {0, 0, 0};
 
 
 int currentBox;
@@ -45,6 +52,14 @@ int main(int argc, char** argv)
     ros::ServiceClient visClient = n.serviceClient<vision::check_brick>("/check_brick");
     vision::check_brick visCmd;
 
+    //Publisher to PackML action-topic:
+    ros::Publisher packmlPub = n.advertise<std_msgs::Int8>("/action_state", 5);
+    std_msgs::Int8 packmlAction;
+
+    //Publisher to feeder warning and alert:
+    ros::Publisher feederWarningPub = n.advertise<std_msgs::Empty>("/feeder_warning", 1);
+    ros::Publisher feederAlertPub = n.advertise<std_msgs::Empty>("/feeder_alert", 1);
+    ros::Subscriber feederRefillSub = n.subscribe("/feeder_refill");
 
     //Start packing:
     ROS_INFO("System manager started!");
@@ -52,6 +67,20 @@ int main(int argc, char** argv)
 
     while(running)
     {
+        ROS_INFO("Checking feeder status..");
+
+        if(feederEstimates[BLUE_BRICKS] <= 0 || feederEstimates[RED_BRICKS] <= 0 || feederEstimates[YELLOW_BRICKS] <= 0)
+        {
+            feederAlertPub.publish();
+            ROS_INFO("Waiting for feeders to be refilled.");
+            //Insert loop for waiting...
+        }
+        else if(feederEstimates[BLUE_BRICKS] <= FEEDER_WARNING_THRESH || feederEstimates[RED_BRICKS] <= FEEDER_WARNING_THRESH || feederEstimates[YELLOW_BRICKS] <= FEEDER_WARNING_THRESH)
+        {
+            feederWarningPub.publish();
+        }
+
+
         ROS_INFO("Asking MES system for next order...");
         ros::Duration(1).sleep();
 

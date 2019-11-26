@@ -51,13 +51,14 @@ int main(int argc, char** argv)
     //Service:
     ros::ServiceServer goToConfigService = n.advertiseService("go_to_config", gotoConfig);
 
-    ros::AsyncSpinner spinner(3);
+    ros::AsyncSpinner spinner(4);
     spinner.start();
 
     //MoveIt! interface:
     static const std::string PLANNING_GROUP = "manipulator";
     moveit::planning_interface::MoveGroupInterface move_group(PLANNING_GROUP);
     mgPtr = &move_group;
+    //move_group.setPlanningTime(1.0);
     moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
     //const robot_state::JointModelGroup* joint_model_group = move_group.getCurrentState()->getJointModelGroup(PLANNING_GROUP);
 
@@ -219,6 +220,8 @@ void pauseRobot(const std_msgs::Empty::ConstPtr& msg)
         ROS_ERROR_STREAM("Service call succeeded, but failed to stop robot! Speed: " << 0.01);
     }
 
+    //TODO: Sleep here?
+
     //Stop-hack: Plan to current config and execute:
     moveit::planning_interface::MoveGroupInterface::Plan my_plan;
     std::vector<double> q;
@@ -226,6 +229,18 @@ void pauseRobot(const std_msgs::Empty::ConstPtr& msg)
     mgPtr->setJointValueTarget(q);
     if(mgPtr->plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS)
     {
+        speed.request.speed_slider_fraction = MAX_SPEED;
+
+        if (!pausePtr->call(speed))
+        {
+            ROS_ERROR_STREAM("Failed to stop robot! Speed: " << MAX_SPEED);
+        }
+
+        if (!speed.response.success)
+        {
+            ROS_ERROR_STREAM("Service call succeeded, but failed to stop robot! Speed: " << MAX_SPEED);
+        }
+
         mgPtr->move();
         ROS_INFO("Robot stopped");
     }
@@ -259,7 +274,6 @@ void playRobot(const std_msgs::Empty::ConstPtr& msg)
     configLock.unlock();
     ROS_INFO_STREAM("Paused target: " << pausedTargetCopy);
 
-    pauseLock.lock();
     //IO message for opening/closing gripper:
     ur_msgs::SetIO gripper;
     gripper.request.fun = 1;
@@ -347,6 +361,8 @@ void playRobot(const std_msgs::Empty::ConstPtr& msg)
         return;
     }
 
+    pauseLock.lock();   
     isPaused = false;
     pauseLock.unlock();
+    ROS_INFO("Playing!");
 }

@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!-- Start ROS bridge server -->
+    <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"/>
+
+    <!-- Open GUI in chrome -->
+    <node name="gui_opener" pkg="gui" type="open_gui_chrome.sh"/>
+</launch>
