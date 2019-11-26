@@ -158,7 +158,16 @@ int main(int argc, char** argv)
                 if(visCmd.response.result == BRICK_MATCH)
                     currentOrderContents[BLUE_BRICKS]--; //One less brick to pack :)
                 else
-                    ROS_ERROR("No brick to drop!"); 
+                {
+                    ROS_ERROR("No brick to drop!");
+                    //Ask robot to go to aboveDiscard
+                    robCmd.request.config_name = "aboveDiscard";
+                    if(!robotClient.call(robCmd))
+                    {
+                        ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
+                        return -1;
+                    }
+                }
             }
             else
             {
@@ -231,7 +240,17 @@ int main(int argc, char** argv)
                 if(visCmd.response.result == BRICK_MATCH)
                     currentOrderContents[RED_BRICKS]--; //One less brick to pack :)
                 else
-                    ROS_ERROR("No brick to drop!"); 
+                {
+                    ROS_ERROR("No brick to drop!");
+
+                    //Ask robot to go to aboveDiscard
+                    robCmd.request.config_name = "aboveDiscard";
+                    if(!robotClient.call(robCmd))
+                    {
+                        ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
+                        return -1;
+                    }
+                } 
             }
             else
             {
@@ -302,7 +321,16 @@ int main(int argc, char** argv)
                 if(visCmd.response.result == BRICK_MATCH)
                     currentOrderContents[YELLOW_BRICKS]--; //One less brick to pack :)
                 else
-                    ROS_ERROR("No brick to drop!"); 
+                {
+                    ROS_ERROR("No brick to drop!");
+                    //Ask robot to go to aboveDiscard
+                    robCmd.request.config_name = "aboveDiscard";
+                    if(!robotClient.call(robCmd))
+                    {
+                        ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
+                        return -1;
+                    }
+                }
             }
             else
             {

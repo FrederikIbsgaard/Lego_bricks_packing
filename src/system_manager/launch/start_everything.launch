@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- Start robot-control -->
+    <include file="$(find robot_control)/launch/start_everything.launch"/>
+
+    <!-- Start vision -->
+    <include file="$(find vision)/launch/vision.launch"/>
+
+    <!-- Start system manager-->
+    <node name="system_manager" pkg="system_manager" type="system_manager"/>
+
+</launch>
