@@ -1,3 +1,3 @@
 [submodule "ur_rtde"]
-	path = ur_rtde
+	path = src/ur_digital_ports/ur_rtde
 	url = https://gitlab.com/sdurobotics/ur_rtde.git
