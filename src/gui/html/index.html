@@ -28,20 +28,16 @@
         });
 
         // Play button:
-        var playPub = new ROSLIB.Topic(
-            {
+        var addTwoIntsClient = new ROSLIB.Service({
             ros : ros,
-            name : '/gui_play',
-            messageType : 'std_msgs/Empty'
-            });
-
-        var playMsg = new ROSLIB.Message();
-
-        function playBtnPres()
-        {
-            playPub.publish(playMsg);
-            return true;
-        }
+            name : '/ur_hardware_interface/dashboard/play',
+            serviceType : 'rospy_tutorials/AddTwoInts'
+        });
+        
+        var request = new ROSLIB.ServiceRequest({
+            a : 1,
+            b : 2
+        });
 
         // Pause button:
         var pausePub = new ROSLIB.Topic(

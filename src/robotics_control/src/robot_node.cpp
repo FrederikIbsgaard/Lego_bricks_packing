@@ -98,10 +98,10 @@ bool gotoConfig(robot_control::goto_config::Request &req, robot_control::goto_co
     ROS_INFO_STREAM("pauseCopy: " << pauseCopy);
 
     //IO message for opening/closing gripper:
-    ur_msgs::SetIO gripper;
-    gripper.request.fun = 1;
-    gripper.request.pin = 4;
-    gripper.request.state = 1.0;
+    // ur_msgs::SetIO gripper;
+    // gripper.request.fun = 1;
+    // gripper.request.pin = 4;
+    // gripper.request.state = 1.0;
 
     //For planning:
     moveit::planning_interface::MoveGroupInterface::Plan my_plan;
@@ -151,37 +151,37 @@ bool gotoConfig(robot_control::goto_config::Request &req, robot_control::goto_co
         ROS_INFO("Finished moving.");
 
         //Check whether to open or close the gripper, depending on the conf.:
-        ROS_INFO("***********************CHECK IF GRIPPER SHOULD CLOSE***********************");
-        if(currentTarget.compare("aboveDiscard") == 0 || currentTarget.compare("aboveBoxA") == 0 || currentTarget.compare("aboveBoxB") == 0)
-        {
-            //Open the gripper:
-            ROS_INFO("Opening the gripper");
-            gripper.request.state = 0.0;
-            if(!gripperPtr->call(gripper))
-            {
-                ROS_ERROR("Failed to contact gripper");
-            }
-        }
-        else if(currentTarget.compare("aboveBoxC") == 0 || currentTarget.compare("aboveBoxD") == 0)
-        {
-            //Open the gripper:
-            ROS_INFO("Opening the gripper");
-            gripper.request.state = 0.0;
-            if(!gripperPtr->call(gripper))
-            {
-                ROS_ERROR("Failed to contact gripper");
-            }
-        }
-        else if(currentTarget.compare("graspSmall") == 0 || currentTarget.compare("graspMedium") == 0 || currentTarget.compare("graspLarge") == 0)
-        {
-            //Close the gripper:
-            ROS_INFO("Closing the gripper");
-            gripper.request.state = 1.0;
-            if(!gripperPtr->call(gripper))
-            {
-                ROS_ERROR("Failed to contact gripper");
-            }
-        }
+        // ROS_INFO("***********************CHECK IF GRIPPER SHOULD CLOSE***********************");
+        // if(currentTarget.compare("aboveDiscard") == 0 || currentTarget.compare("aboveBoxA") == 0 || currentTarget.compare("aboveBoxB") == 0)
+        // {
+            // //Open the gripper:
+            // ROS_INFO("Opening the gripper");
+            // gripper.request.state = 0.0;
+            // if(!gripperPtr->call(gripper))
+            // {
+            //     ROS_ERROR("Failed to contact gripper");
+            // }
+        // }
+        // else if(currentTarget.compare("aboveBoxC") == 0 || currentTarget.compare("aboveBoxD") == 0)
+        // {
+        //     //Open the gripper:
+        //     ROS_INFO("Opening the gripper");
+        //     gripper.request.state = 0.0;
+        //     if(!gripperPtr->call(gripper))
+        //     {
+        //         ROS_ERROR("Failed to contact gripper");
+        //     }
+        // }
+        // else if(currentTarget.compare("graspSmall") == 0 || currentTarget.compare("graspMedium") == 0 || currentTarget.compare("graspLarge") == 0)
+        // {
+        //     //Close the gripper:
+        //     ROS_INFO("Closing the gripper");
+        //     gripper.request.state = 1.0;
+        //     if(!gripperPtr->call(gripper))
+        //     {
+        //         ROS_ERROR("Failed to contact gripper");
+        //     }
+        // }
         
         res.success = true;
         return true;      

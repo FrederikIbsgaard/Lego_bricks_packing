@@ -5,7 +5,7 @@
     <include file="$(find ur_robot_driver)/launch/ur5e_bringup.launch">
         <arg name="robot_ip" value="192.168.0.12"/>
         <arg name="kinematics_config" value="$(find robot_control)/config/my_robot_calibration.yaml"/>
-        <!-- <arg name="headless_mode" value="true"/> -->
+        <arg name="headless_mode" value="true"/>
     </include>
 
 

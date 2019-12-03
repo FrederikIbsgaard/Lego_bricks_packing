@@ -1,8 +1,11 @@
 #include <iostream>
 #include "ros/ros.h"
 
-#include <state.h>
+#include "state.h"
 #include <std_msgs/Int8.h>
+#include <std_msgs/Empty.h>
+
+#include <ur_msgs/SetIO.h>
 
 //Services:
 #include "robot_control/goto_config.h"
@@ -22,18 +25,24 @@ using namespace std;
 
 #define FEEDER_WARNING_THRESH 5
 
+#define FEEDER_MAX 32 //Max number of bricks in any feeder
+
 //Order info:
 int currentOrderContents[3]; //blue, red, yellow
 bool boxContainsOrder[4] = {false, false, false, false};
 int currentOrderId;
 int currentOrderTicket;
 
-int feederEstimates[3] = {0, 0, 0};
+//Estimate of feeder contents:
+int feederEstimates[3] = {FEEDER_MAX, FEEDER_MAX, FEEDER_MAX};
 
-
+//Runtime info:
 int currentBox;
 string currentBoxString;
 bool running = true;
+
+//Callbacks:
+void feederRefill(const std_msgs::Empty::ConstPtr& msg);
 
 int main(int argc, char** argv)
 {
@@ -59,25 +68,45 @@ int main(int argc, char** argv)
     //Publisher to feeder warning and alert:
     ros::Publisher feederWarningPub = n.advertise<std_msgs::Empty>("/feeder_warning", 1);
     ros::Publisher feederAlertPub = n.advertise<std_msgs::Empty>("/feeder_alert", 1);
-    ros::Subscriber feederRefillSub = n.subscribe("/feeder_refill");
+
+    //Refill subscriber:
+    ros::Subscriber feederRefillSub = n.subscribe("/feeder_refill", 1, feederRefill);
+
+    //Gripper interface:
+    //IO message for opening/closing gripper:
+    ur_msgs::SetIO gripper;
+    gripper.request.fun = 1;
+    gripper.request.pin = 4;
+    gripper.request.state = 1.0;
+
+    ros::ServiceClient urIoClient = n.serviceClient<ur_msgs::SetIO>("/ur_hardware_interface/set_io");
 
     //Start packing:
+    //Open the gripper:
+    ROS_INFO("Opening the gripper");
+    gripper.request.state = 0.0;
+    if(!urIoClient.call(gripper))
+    {
+        ROS_ERROR("Failed to contact gripper");
+    }
+    
     ROS_INFO("System manager started!");
     ros::Duration(1).sleep();
 
     while(running)
     {
         ROS_INFO("Checking feeder status..");
+        std_msgs::Empty empty;
 
         if(feederEstimates[BLUE_BRICKS] <= 0 || feederEstimates[RED_BRICKS] <= 0 || feederEstimates[YELLOW_BRICKS] <= 0)
         {
-            feederAlertPub.publish();
+            feederAlertPub.publish(empty);
             ROS_INFO("Waiting for feeders to be refilled.");
             //Insert loop for waiting...
         }
         else if(feederEstimates[BLUE_BRICKS] <= FEEDER_WARNING_THRESH || feederEstimates[RED_BRICKS] <= FEEDER_WARNING_THRESH || feederEstimates[YELLOW_BRICKS] <= FEEDER_WARNING_THRESH)
         {
-            feederWarningPub.publish();
+            feederWarningPub.publish(empty);
         }
 
 
@@ -138,6 +167,14 @@ int main(int argc, char** argv)
                 ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
                 return -1;
             }
+            
+            //Open the gripper:
+            ROS_INFO("Opening the gripper");
+            gripper.request.state = 0.0;
+            if(!urIoClient.call(gripper))
+            {
+                ROS_ERROR("Failed to contact gripper");
+            }
 
             robCmd.request.config_name = "graspSmall";
             ROS_INFO_STREAM("Moving to " << robCmd.request.config_name);
@@ -145,6 +182,14 @@ int main(int argc, char** argv)
             {
                 ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
                 return -1;
+            }
+
+            //Close the gripper:
+            ROS_INFO("Closing the gripper");
+            gripper.request.state = 1.0;
+            if(!urIoClient.call(gripper))
+            {
+                ROS_ERROR("Failed to contact gripper");
             }
 
             //Ask robot to go to preSmall
@@ -157,12 +202,16 @@ int main(int argc, char** argv)
             }
 
             //Ask vision system to validate brick:
+            ros::WallTime start_ = ros::WallTime::now();
             visCmd.request.color = "blue";
             if(!visClient.call(visCmd))
             {
                 ROS_ERROR("Vision service call failed!");
                 return -1;
             }
+            ros::WallTime end_ = ros::WallTime::now();
+            double execution_time = (end_ - start_).toNSec() * 1e-6;
+            ROS_INFO_STREAM("Vision time [ms]: " << execution_time);
 
             ROS_INFO_STREAM("Brick check result: " << (int)visCmd.response.result);
             if(visCmd.response.result == BRICK_MATCH)
@@ -182,10 +231,17 @@ int main(int argc, char** argv)
                     return -1;
                 }
 
-                //Ask robot to open gripper
-
                 if(visCmd.response.result == BRICK_MATCH)
+                {
                     currentOrderContents[BLUE_BRICKS]--; //One less brick to pack :)
+                    //Open the gripper:
+                    ROS_INFO("Opening the gripper");
+                    gripper.request.state = 0.0;
+                    if(!urIoClient.call(gripper))
+                    {
+                        ROS_ERROR("Failed to contact gripper");
+                    }
+                }
                 else
                 {
                     ROS_ERROR("No brick to drop!");
@@ -195,6 +251,14 @@ int main(int argc, char** argv)
                     {
                         ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
                         return -1;
+                    }
+
+                    //Open the gripper:
+                    ROS_INFO("Opening the gripper");
+                    gripper.request.state = 0.0;
+                    if(!urIoClient.call(gripper))
+                    {
+                        ROS_ERROR("Failed to contact gripper");
                     }
                 }
             }
@@ -206,6 +270,14 @@ int main(int argc, char** argv)
                 {
                     ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
                     return -1;
+                }
+
+                //Open the gripper:
+                ROS_INFO("Opening the gripper");
+                gripper.request.state = 0.0;
+                if(!urIoClient.call(gripper))
+                {
+                    ROS_ERROR("Failed to contact gripper");
                 }
             }
         }
@@ -222,12 +294,28 @@ int main(int argc, char** argv)
                 return -1;
             }
 
+            //Open the gripper:
+            ROS_INFO("Opening the gripper");
+            gripper.request.state = 0.0;
+            if(!urIoClient.call(gripper))
+            {
+                ROS_ERROR("Failed to contact gripper");
+            }
+
             robCmd.request.config_name = "graspMedium";
             ROS_INFO_STREAM("Moving to " << robCmd.request.config_name);
             if(!robotClient.call(robCmd))
             {
                 ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
                 return -1;
+            }
+
+            //Close the gripper:
+            ROS_INFO("Closing the gripper");
+            gripper.request.state = 1.0;
+            if(!urIoClient.call(gripper))
+            {
+                ROS_ERROR("Failed to contact gripper");
             }
 
             //Ask robot to go to preSmall
@@ -267,7 +355,17 @@ int main(int argc, char** argv)
                 //Ask robot to open gripper
 
                 if(visCmd.response.result == BRICK_MATCH)
+                {
                     currentOrderContents[RED_BRICKS]--; //One less brick to pack :)
+
+                    //Open the gripper:
+                    ROS_INFO("Opening the gripper");
+                    gripper.request.state = 0.0;
+                    if(!urIoClient.call(gripper))
+                    {
+                        ROS_ERROR("Failed to contact gripper");
+                    }
+                }
                 else
                 {
                     ROS_ERROR("No brick to drop!");
@@ -279,6 +377,14 @@ int main(int argc, char** argv)
                         ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
                         return -1;
                     }
+
+                    //Open the gripper:
+                    ROS_INFO("Opening the gripper");
+                    gripper.request.state = 0.0;
+                    if(!urIoClient.call(gripper))
+                    {
+                        ROS_ERROR("Failed to contact gripper");
+                    }
                 } 
             }
             else
@@ -289,6 +395,14 @@ int main(int argc, char** argv)
                 {
                     ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
                     return -1;
+                }
+
+                //Open the gripper:
+                ROS_INFO("Opening the gripper");
+                gripper.request.state = 0.0;
+                if(!urIoClient.call(gripper))
+                {
+                    ROS_ERROR("Failed to contact gripper");
                 }
             }
         }
@@ -304,11 +418,27 @@ int main(int argc, char** argv)
                 return -1;
             }
 
+            //Open the gripper:
+            ROS_INFO("Opening the gripper");
+            gripper.request.state = 0.0;
+            if(!urIoClient.call(gripper))
+            {
+                ROS_ERROR("Failed to contact gripper");
+            }
+
             robCmd.request.config_name = "graspLarge";
             if(!robotClient.call(robCmd))
             {
                 ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
                 return -1;
+            }
+
+            //Close the gripper:
+            ROS_INFO("Closing the gripper");
+            gripper.request.state = 1.0;
+            if(!urIoClient.call(gripper))
+            {
+                ROS_ERROR("Failed to contact gripper");
             }
 
             //Ask robot to go to preSmall
@@ -348,7 +478,17 @@ int main(int argc, char** argv)
                 //Ask robot to open gripper
 
                 if(visCmd.response.result == BRICK_MATCH)
+                {
                     currentOrderContents[YELLOW_BRICKS]--; //One less brick to pack :)
+
+                    //Open the gripper:
+                    ROS_INFO("Opening the gripper");
+                    gripper.request.state = 0.0;
+                    if(!urIoClient.call(gripper))
+                    {
+                        ROS_ERROR("Failed to contact gripper");
+                    }
+                }
                 else
                 {
                     ROS_ERROR("No brick to drop!");
@@ -358,6 +498,14 @@ int main(int argc, char** argv)
                     {
                         ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
                         return -1;
+                    }
+
+                    //Open the gripper:
+                    ROS_INFO("Opening the gripper");
+                    gripper.request.state = 0.0;
+                    if(!urIoClient.call(gripper))
+                    {
+                        ROS_ERROR("Failed to contact gripper");
                     }
                 }
             }
@@ -370,6 +518,14 @@ int main(int argc, char** argv)
                     ROS_ERROR_STREAM("Failed to move robot to " << robCmd.request.config_name);
                     return -1;
                 }
+
+                //Open the gripper:
+                ROS_INFO("Opening the gripper");
+                gripper.request.state = 0.0;
+                if(!urIoClient.call(gripper))
+                {
+                    ROS_ERROR("Failed to contact gripper");
+                }
             }
         }
 
@@ -380,8 +536,14 @@ int main(int argc, char** argv)
         //Service-call to MES-node
 
         //Call MiR
-            
     }
 
     return 0;
+}
+
+void feederRefill(const std_msgs::Empty::ConstPtr& msg)
+{
+    feederEstimates[0] = FEEDER_MAX;
+    feederEstimates[1] = FEEDER_MAX;
+    feederEstimates[2] = FEEDER_MAX;
 }
