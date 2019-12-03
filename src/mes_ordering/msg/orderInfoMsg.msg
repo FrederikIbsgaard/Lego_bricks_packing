@@ -1,7 +1,4 @@
-int8 amount
----
 int16 id
-string ticket
 int8 blue
 int8 red
 int8 yellow

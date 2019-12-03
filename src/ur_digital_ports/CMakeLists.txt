@@ -144,6 +144,12 @@ target_link_libraries(lightTower_server ${catkin_LIBRARIES})
 target_link_libraries(lightTower_server PRIVATE ur_rtde::rtde)
 add_dependencies(lightTower_server ur_digital_ports_gencpp)
 
+# toolOut_server -----------------------------------------------------------------
+add_executable(toolContorl_server src/toolControl_server.cpp)
+target_link_libraries(toolContorl_server ${catkin_LIBRARIES})
+target_link_libraries(toolContorl_server PRIVATE ur_rtde::rtde)
+add_dependencies(toolContorl_server ur_digital_ports_gencpp)
+
 # digitalOut_client -----------------------------------------------------------------
 #add_executable(digitalOut_client src/digitalOut_client.cpp)
 #target_link_libraries(digitalOut_client ${catkin_LIBRARIES})
