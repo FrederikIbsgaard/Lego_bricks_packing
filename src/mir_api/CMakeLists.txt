@@ -1,0 +1,20 @@
+cmake_minimum_required(VERSION 2.8.3)
+project(mir_api)
+
+find_package(catkin REQUIRED COMPONENTS
+  rospy
+  std_msgs
+  message_generation
+)
+
+## Generate services in the 'srv' folder
+add_service_files(
+  FILES
+  mir_api_action.srv
+)
+
+## Generate added messages and services with any dependencies listed here
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+ )
