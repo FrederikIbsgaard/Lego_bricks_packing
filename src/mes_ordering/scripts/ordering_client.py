@@ -80,11 +80,12 @@ def delete_order(id, ticket):
                   'comment': str(id)})
         # Convert response to json/dictionary
         entry = json.loads(response.text)
-        entry['log_entry']
+        return [1, entry['log_entry']]
     elif response.status_code == 400:
         # Convert response to json/dictionary
         data = json.loads(response.text)
         print("Deleting order:", data['message'])
+        return [0, data['message']]
 
 
 def post_pml(PML_State):
@@ -92,7 +93,7 @@ def post_pml(PML_State):
     response = requests.post(
         HOST + '/log',
         json={'cell_id': CELL_ID,
-              'event': PML_State,
+              'event': "PML_" + PML_State,
               'comment': ""})
 
     if response.status_code == 201:
@@ -108,7 +109,10 @@ def post_pml(PML_State):
 
 
 # Global variables
-HOST = 'http://127.0.0.1:5000'
+# HOST = 'http://127.0.0.1:5000'
+
+HOST = 'http://10.10.19.20'
+
 CELL_ID = 8
 
 # Main

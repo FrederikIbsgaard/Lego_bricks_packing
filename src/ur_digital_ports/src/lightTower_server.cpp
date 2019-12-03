@@ -8,11 +8,11 @@
 
 #define RED_PORT 0
 #define AMBER_PORT 1
-#define GREEN_PORT 3
+#define GREEN_PORT 2
 
 //using namespace ur_rtde;
 unsigned int redAction = 0, amberAction = 0, greenAction = 0;
-ur_rtde::RTDEIOInterface rtde_io("192.168.42.12");
+ur_rtde::RTDEIOInterface rtde_io("192.168.0.12");
 // Reset everything at start
 void pmlState(const std_msgs::String::ConstPtr& msg){
 	std::string msgs = msg->data.c_str();
@@ -59,9 +59,19 @@ void pmlState(const std_msgs::String::ConstPtr& msg){
 }
 
 void lightOn(int port, int state){
-	ROS_INFO("Light. Port: %d, State: %d", port, state);
-	ur_rtde::RTDEIOInterface rtde_io("192.168.42.12");
+	ROS_INFO("Port: %d, State: %d", port, state);
+	// ur_rtde::RTDEIOInterface rtde_io("192.168.42.12");
 	rtde_io.setStandardDigitalOut(port, state);
+}
+
+bool portControl(ur_digital_ports::digitalOut_srv::Request  &req,
+         ur_digital_ports::digitalOut_srv::Response &res)
+{
+	// The constructor simply takes the IP address of the Robot
+	ROS_INFO("request: port=%ld, state=%ld", (long int)req.port, (long int)req.state);
+	res.status = rtde_io.setStandardDigitalOut(req.port, req.state);
+	ROS_INFO("sending back response: [%ld]", (long int)res.status);
+  return true;
 }
 
 void lightT(int redS, int amberS, int greenS){
@@ -79,8 +89,8 @@ int main(int argc, char **argv){
 	ros::init(argc, argv, "lightTower_server");
 	ros::NodeHandle n;
 
-	ros::Subscriber sub = n.subscribe("ur_lightTower_out", 10, pmlState);
-	//ros::ServiceServer service = n.advertiseService("ur_digital_out", testFunc);
+	ros::Subscriber sub = n.subscribe("packml_state", 10, pmlState);
+	ros::ServiceServer service = n.advertiseService("digital_output", portControl);
 	ROS_INFO("Ready to use digital output.");
 	//ros::spin();
 	ros::spinOnce();

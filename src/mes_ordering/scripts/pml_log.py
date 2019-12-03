@@ -21,7 +21,7 @@ def listener():
     # run simultaneously.
     rospy.init_node('pml_logging', anonymous=True)
 
-    rospy.Subscriber("pml_log", String, callback)
+    rospy.Subscriber("packml_state", String, callback)
 
     # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
