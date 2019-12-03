@@ -10,6 +10,8 @@
 //Services:
 #include "robot_control/goto_config.h"
 #include "vision/check_brick.h"
+#include "mes_ordering/DeleteOrder_srv.h"
+#include "mes_ordering/GetOrder_srv.h"
 
 //Topics:
 
@@ -50,14 +52,21 @@ int main(int argc, char** argv)
     ros::NodeHandle n;
 
     //Setup service clients:
+    //Robot:
     ros::ServiceClient robotClient = n.serviceClient<robot_control::goto_config>("/go_to_config");
     robot_control::goto_config robCmd;
 
-    //ros::ServiceClient mesGetClient = n.serviceClient<mes_ordering::GetOrder_srv>("/MES_GetOrder");
-    //mes_ordering::GetOrder_srv mesCmd;
+    //MES:
+    ros::ServiceClient mesGetClient = n.serviceClient<mes_ordering::GetOrder_srv>("/MES_GetOrder");
+    mes_ordering::GetOrder_srv mesCmd;
 
-    //ros::ServiceClient mesDelClient = n.serviceClient<mes_ordering::DeleteOrder_srv>("/MES_DeleteOrder");
+    mes_ordering::GetOrder_srv getOrder;
 
+    ros::ServiceClient mesDelClient = n.serviceClient<mes_ordering::DeleteOrder_srv>("/MES_DeleteOrder");
+
+    mes_ordering::DeleteOrder_srv delOrder;
+
+    //Vision:
     ros::ServiceClient visClient = n.serviceClient<vision::check_brick>("/check_brick");
     vision::check_brick visCmd;
 
@@ -111,12 +120,23 @@ int main(int argc, char** argv)
 
 
         ROS_INFO("Asking MES system for next order...");
-        ros::Duration(1).sleep();
+        getOrder.request.amount = 1;
 
-        //Input fake order, for now:
-        currentOrderContents[0] = 2;
-        currentOrderContents[1] = 5;
-        currentOrderContents[2] = 5;
+        if(!mesGetClient.call(getOrder))
+        {
+            ROS_ERROR("MES servicer call failed!");
+            return -1;
+        }
+
+        ROS_INFO_STREAM("Got order no. " << getOrder.response.id);
+        ROS_INFO_STREAM("Ticket: " << getOrder.response.ticket);
+        ROS_INFO_STREAM("Blue: " << getOrder.response.blue);
+        ROS_INFO_STREAM("Red: " << getOrder.response.red);
+        ROS_INFO_STREAM("Yellow: " << getOrder.response.yellow);
+
+        currentOrderContents[BLUE_BRICKS] = getOrder.response.blue;
+        currentOrderContents[RED_BRICKS] = getOrder.response.red;
+        currentOrderContents[YELLOW_BRICKS] = getOrder.response.yellow;
 
         //Find the next available box:
         currentBox = 0;
@@ -531,8 +551,18 @@ int main(int argc, char** argv)
 
         boxContainsOrder[currentBox] = true;
 
-
         //Now the order should be packed, notify MES-node:
+        ROS_INFO_STREAM("Deleting order with id " << getOrder.response.id);
+        delOrder.request.id = getOrder.response.id;
+        delOrder.request.ticket = getOrder.response.ticket;
+
+        if(!mesDelClient.call(delOrder))
+        {
+            ROS_INFO("Failed to delete order!");
+            return -1;
+        }
+
+        ROS_INFO("Deleted order!");
         //Service-call to MES-node
 
         //Call MiR
