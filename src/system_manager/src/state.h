@@ -1,4 +1,4 @@
-#define ST_UNDEFINDE 0
+#define ST_UNDEFINED 0
 
 #define ST_ABORTING 10
 #define ST_ABORTED 11
@@ -17,6 +17,7 @@
 #define ST_HOLDING 40
 #define ST_HELD 41
 #define ST_UNHOLDING 42
+
 #define ST_SUSPENDING 50
 #define ST_SUSPENDED  51
 #define ST_UNSUPENDING  52

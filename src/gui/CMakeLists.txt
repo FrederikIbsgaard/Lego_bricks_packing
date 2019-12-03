@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(system_manager)
+project(gui)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
@@ -8,11 +8,6 @@ add_compile_options(-std=c++11)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  std_msgs
-  message_generation
-  robot_control
-  vision
 )
 
 SET(CMAKE_BUILD_TYPE Release)
@@ -57,10 +52,10 @@ SET(CMAKE_BUILD_TYPE Release)
 # )
 
 ## Generate services in the 'srv' folder
-#add_service_files(
-#  FILES
-#  goto_config.srv
-#)
+# add_service_files(
+#   FILES
+#   goto_config.srv
+# )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -70,10 +65,10 @@ SET(CMAKE_BUILD_TYPE Release)
 # )
 
 ## Generate added messages and services with any dependencies listed here
-#generate_messages(
-#  DEPENDENCIES
-#  std_msgs
-#)
+# generate_messages(
+#   DEPENDENCIES
+#   std_msgs
+# )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -109,7 +104,7 @@ catkin_package(
 #  LIBRARIES er_smart_cam
 #  CATKIN_DEPENDS roscpp std_msgs
 #  DEPENDS system_lib
-#   CATKIN_DEPENDS message_runtime
+  #  CATKIN_DEPENDS message_runtime
 )
 
 ###########
@@ -118,10 +113,9 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(
-# include
-  ${catkin_INCLUDE_DIRS}
-)
+# include_directories(
+# # include
+# )
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
@@ -136,9 +130,6 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 
-## ROBOTICS executables:
-add_executable(${PROJECT_NAME}_node src/system_manager.cpp)
-add_executable(${PROJECT_NAME}_packml src/state.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -152,8 +143,7 @@ add_executable(${PROJECT_NAME}_packml src/state.cpp)
 
 ## Specify libraries to link a library or executable target against
 ## ROBOTICS executables:
-target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES})
-target_link_libraries(${PROJECT_NAME}_packml ${catkin_LIBRARIES})
+
 #############
 ## Install ##
 #############

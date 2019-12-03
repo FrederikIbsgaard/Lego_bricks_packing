@@ -23,17 +23,17 @@
 
 button
 {
-    height: 50px;
-    width: 50px;
+    height: 65px;
+    width: 65px;
     background: none;
-    border: none;
+    border: none;   
 }
 
 #controls
 {
     margin-top: 5px;
     padding-bottom: 45px;
-    padding-left: 50px;
+    padding-left: 10px;
     vertical-align: middle;
     height: 13vh;
     background-color: #587792;
@@ -41,7 +41,7 @@ button
 
 #buttons
 {
-    transform: translateY(100%);
+    transform: translateY(100%) translateX(-30%);
     height: 60px;
     width: 300px;
     float: left;
@@ -201,4 +201,9 @@ tr
     font-family: ubuntu;
     font-size: 20px;
     color: #ffffff;
+}
+
+#status_val
+{
+    width: 250px;
 }
