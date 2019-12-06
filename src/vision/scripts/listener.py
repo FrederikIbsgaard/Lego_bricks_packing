@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from vision.srv import check_brick, check_brickResponse
+from local_log.msg import system_log_msg
 from pymodbus.client.sync import ModbusTcpClient as ModbusClient
 import modbus_utilities as utilities_modbus
 # --------------------------------------------------------------------------- #
@@ -7,6 +8,9 @@ import modbus_utilities as utilities_modbus
 # --------------------------------------------------------------------------- #
 import logging
 import time
+import rospy
+from std_msgs.msg import String
+
 log = logging.getLogger()
 log.setLevel(logging.DEBUG)
 
@@ -14,35 +18,60 @@ log.setLevel(logging.DEBUG)
 client = ModbusClient(utilities_modbus.IP, port=utilities_modbus.PORT)
 client.connect()
 
+# Logging information messages:
+pub = rospy.Publisher('system_log', system_log_msg,queue_size=10)
+info_msg = system_log_msg()
+info_msg.type = "INFO"   
+info_msg.node_id = "Vision node"
+error_msg = system_log_msg()
+error_msg.type = "ERROR"   
+error_msg.node_id = "Vision node"
+
 def run_sync_client(modbus_client,request):
-    # Read the registers
-    rr = modbus_client.read_holding_registers(address=utilities_modbus.ADDRESS, count=3, unit=utilities_modbus.UNIT) 
-    if(rr.registers[0] == utilities_modbus.GET_BRICK_COLOR_WAIT):
-	print("INFO: Server is ready (waiting for order)")
-        if(rr.registers[1] == utilities_modbus.RESULT_WAIT):
-            print("INFO: Server is ready (result slot available)")
-            if(request == utilities_modbus.GET_BRICK_COLOR_BLUE):
-                if sendRequest(modbus_client,request):
-                    return checkResult(modbus_client,request)  
-                    
-            elif(request == utilities_modbus.GET_BRICK_COLOR_RED):
-                if sendRequest(modbus_client,request):
-                    return checkResult(modbus_client,request)    
+    
+    try:
+        # Read the registers
+        rr = modbus_client.read_holding_registers(address=utilities_modbus.ADDRESS, count=3, unit=utilities_modbus.UNIT) 
+        if(rr.registers[0] == utilities_modbus.GET_BRICK_COLOR_WAIT):
 
-            elif(request == utilities_modbus.GET_BRICK_COLOR_YELLOW):
-                if sendRequest(modbus_client,request):
-                    return checkResult(modbus_client,request)  
+            info_msg.desc="Server is ready (waiting for order)"
+            pub.publish(info_msg)
+            if(rr.registers[1] == utilities_modbus.RESULT_WAIT):
+                
+                info_msg.desc="Server is ready (result slot available)"
+                pub.publish(info_msg)
+                if(request == utilities_modbus.GET_BRICK_COLOR_BLUE):
+                    if sendRequest(modbus_client,request):
+                        return checkResult(modbus_client,request)  
+                        
+                elif(request == utilities_modbus.GET_BRICK_COLOR_RED):
+                    if sendRequest(modbus_client,request):
+                        return checkResult(modbus_client,request)    
+
+                elif(request == utilities_modbus.GET_BRICK_COLOR_YELLOW):
+                    if sendRequest(modbus_client,request):
+                        return checkResult(modbus_client,request)  
+                else:
+                    error_msg.desc="Invalid color request."
+                    pub.publish(error_msg)
             else:
-                print("ERROR: Invalid color request")  
+                info_msg.desc="Server is busy (result slot available)"
+                pub.publish(info_msg)
         else:
-            print("INFO: Server is busy (result slot available)")
-    else:
-        print("INFO: Server is busy (computing order)")
-
-
+            info_msg.desc="Server is busy (computing order)"
+            pub.publish(info_msg)        
+       
+    except:
+        error_msg.desc="Modbus server not available, please reboot the raspberry pi."
+        pub.publish(error_msg)
+        return -1
+    
 
 def handle_check_brick(req):
-    
+
+    info_msg.desc="Request recieved, checkin for color: " + req.color
+    pub.publish(info_msg)
+
     if req.color == utilities_modbus.RED_BRICK:
         request = utilities_modbus.GET_BRICK_COLOR_RED 
     elif req.color == utilities_modbus.BLUE_BRICK:
@@ -61,10 +90,13 @@ def sendRequest(modbus_client,request):
     # Check that the request arrives correctly
     rr = modbus_client.read_holding_registers(address=utilities_modbus.ADDRESS, count=3, unit=utilities_modbus.UNIT)
     if(rr.registers[0] == request):
-       print("INFO: Request was succesful")
+
+       info_msg.desc="Request was succesful"
+       pub.publish(info_msg)
        return True
     else:
-       print("INFO: Request was not succesful")
+       error_msg.desc="Request was not succesful"
+       pub.publish(error_msg)
        return False
 
 # Function to know which is the equivalence between the register values and the colors:
@@ -85,18 +117,21 @@ def checkResult(modbus_client,request):
     while rr.registers[1] == utilities_modbus.RESULT_WAIT: 
         rr = modbus_client.read_holding_registers(address=utilities_modbus.ADDRESS, count=3, unit=utilities_modbus.UNIT)
         if(rr.registers[1] == utilities_modbus.RESULT_COLOR_MATCH):
-            print("INFO: Color matches: " + whichColor(request))
+            info_msg.desc="Color matches: " + whichColor(request)
+            pub.publish(info_msg)
             return True
         elif(rr.registers[1] == utilities_modbus.RESULT_COLOR_MISMATCH):
-            print("INFO: Color doesn't match: " + whichColor(request))
+            info_msg.desc="Color doesn't match: " + whichColor(request)
+            pub.publish(info_msg)
             return False
 
-import rospy
-
 def CheckBrickColor(color):
+    
     rospy.init_node('CheckBrickColor')
+
     s = rospy.Service('check_brick', check_brick, handle_check_brick)
-    print( "ROS SERVICE: Ready to CheckBrickColor.")
+    info_msg.desc="ROS SERVICE: Ready to CheckBrickColor."
+    pub.publish(info_msg)
     rospy.spin()
 
 if __name__ == "__main__":
