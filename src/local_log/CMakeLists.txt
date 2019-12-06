@@ -14,7 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
 )
 
-find_package(ur_rtde REQUIRED) # --------------------------------------------
+# find_package(ur_rtde REQUIRED) # --------------------------------------------
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)

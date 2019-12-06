@@ -38,4 +38,5 @@ def log_listener():
 
 
 if __name__ == '__main__':
+    print "Logger Ready"
     log_listener()
