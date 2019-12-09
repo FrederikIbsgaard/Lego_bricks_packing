@@ -24,7 +24,6 @@
 
 //Topics:
 
-
 using namespace std;
 
 #define BLUE_BRICKS   0
@@ -46,7 +45,7 @@ using namespace std;
 int currentOrderContents[3]; //blue, red, yellow
 bool boxContainsOrder[4] = {false, false, false, false};
 int currentOrderId;
-int currentOrderTicket;
+string currentOrderTicket;
 
 //Estimate of feeder contents:
 int feederEstimates[3] = {FEEDER_MAX, FEEDER_MAX, FEEDER_MAX};
@@ -56,11 +55,13 @@ int currentBox;
 string currentBoxString;
 bool running = true;
 bool isPaused = false;
+bool isStopped = true;
 
 //Callbacks:
 void feederRefill(const std_msgs::Empty::ConstPtr& msg);
 void pauseSystem(const std_msgs::Empty::ConstPtr& msg);
 void playSystem(const std_msgs::Empty::ConstPtr& msg);
+void stopSystem(const std_msgs::Empty::ConstPtr& msg);
 
 //Robotics:
 bool loadAndRunUrProgram(string filename);
@@ -79,10 +80,24 @@ std_srvs::Trigger robotStopSrv;
 ros::ServiceClient robotGetProgState;
 ur_dashboard_msgs::GetProgramState robotGetProgStateSrv;
 
+ros::ServiceClient urIoClient;
+ur_msgs::SetIO gripper;
+
+ros::ServiceClient visClient;
+vision::check_brick visCmd;
+
+ros::ServiceClient mesGetClient;
+mes_ordering::GetOrder_srv getOrder;
+
 //Mutexes:
 mutex feederLock;
 mutex pauseLock;
-mutex urInterfaceLock;
+mutex orderLock;
+mutex stopLock;
+
+//Functions:
+void getOrderFromMes(int &orderId, int &b, int &r, int &y, string &ticket);
+void pack(int color, int amount, int box);
 
 int main(int argc, char** argv)
 {
@@ -105,8 +120,8 @@ int main(int argc, char** argv)
     robotGetProgState = n.serviceClient<ur_dashboard_msgs::GetProgramState>("/ur_hardware_interface/dashboard/program_state");
 
     //MES:
-    ros::ServiceClient mesGetClient = n.serviceClient<mes_ordering::GetOrder_srv>("/MES_GetOrder");
-    mes_ordering::GetOrder_srv mesCmd;
+    mesGetClient = n.serviceClient<mes_ordering::GetOrder_srv>("/MES_GetOrder");
+    // mes_ordering::GetOrder_srv mesCmd;
 
     mes_ordering::GetOrder_srv getOrder;
 
@@ -115,8 +130,7 @@ int main(int argc, char** argv)
     mes_ordering::DeleteOrder_srv delOrder;
 
     //Vision:
-    ros::ServiceClient visClient = n.serviceClient<vision::check_brick>("/check_brick");
-    vision::check_brick visCmd;
+    visClient = n.serviceClient<vision::check_brick>("/check_brick");
 
     //Publisher to PackML action-topic:
     ros::Publisher packmlPub = n.advertise<std_msgs::Int8>("/action_state", 5);
@@ -131,12 +145,11 @@ int main(int argc, char** argv)
 
     //Gripper interface:
     //IO message for opening/closing gripper:
-    ur_msgs::SetIO gripper;
     gripper.request.fun = 1;
     gripper.request.pin = 4;
     gripper.request.state = 1.0;
 
-    ros::ServiceClient urIoClient = n.serviceClient<ur_msgs::SetIO>("/ur_hardware_interface/set_io");
+    urIoClient = n.serviceClient<ur_msgs::SetIO>("/ur_hardware_interface/set_io");
 
     //MiR interface:
     ros::ServiceClient mirClient = n.serviceClient<mir_api::mir_api_action>("/mir_api");
@@ -145,7 +158,7 @@ int main(int argc, char** argv)
     //Sub. to system topics:
     ros::Subscriber pauseSub = n.subscribe<std_msgs::Empty>("/gui_pause", 1, pauseSystem);
     ros::Subscriber playSub = n.subscribe<std_msgs::Empty>("/gui_play", 1, playSystem);
-
+    ros::Subscriber postSub = n.subscribe<std_msgs::Empty>("/gui_stop", 1, stopSystem);
 
     //Start packing:
     //Open the gripper:
@@ -157,418 +170,150 @@ int main(int argc, char** argv)
     }
     
     ROS_INFO("System manager started!");
-    ros::Duration(1).sleep();
+
+    stopLock.lock();
+    bool stopCopy = isStopped;
+    stopLock.unlock();
+
+    do
+    {
+        stopLock.lock();
+        stopCopy = isStopped;
+        stopLock.unlock();
+        ros::Duration(0.1).sleep();
+    } while(stopCopy);
 
     while(running)
     {
-        ROS_INFO("Checking feeder status..");
-        std_msgs::Empty empty;
-
-        feederLock.lock();
-        if(feederEstimates[BLUE_BRICKS] <= 0 || feederEstimates[RED_BRICKS] <= 0 || feederEstimates[YELLOW_BRICKS] <= 0)
+        //Stop-wait-loop:
+        do
         {
-            feederAlertPub.publish(empty);
-            ROS_INFO("Waiting for feeders to be refilled.");
-            //Insert loop for waiting...
-        }
-        else if(feederEstimates[BLUE_BRICKS] <= FEEDER_WARNING_THRESH || feederEstimates[RED_BRICKS] <= FEEDER_WARNING_THRESH || feederEstimates[YELLOW_BRICKS] <= FEEDER_WARNING_THRESH)
+            stopLock.lock();
+            stopCopy = isStopped;
+            stopLock.unlock();
+            ros::Duration(0.1).sleep();
+        } while(stopCopy);
+
+        stopLock.lock();
+        stopCopy = isStopped;
+        stopLock.unlock();
+
+        if(!stopCopy)
         {
-            feederWarningPub.publish(empty);
+            ROS_INFO("Checking feeder status..");
+            std_msgs::Empty empty;
+
+            feederLock.lock();
+            if(feederEstimates[BLUE_BRICKS] <= 0 || feederEstimates[RED_BRICKS] <= 0 || feederEstimates[YELLOW_BRICKS] <= 0)
+            {
+                feederAlertPub.publish(empty);
+                ROS_INFO("Waiting for feeders to be refilled.");
+                //Insert loop for waiting...
+            }
+            else if(feederEstimates[BLUE_BRICKS] <= FEEDER_WARNING_THRESH || feederEstimates[RED_BRICKS] <= FEEDER_WARNING_THRESH || feederEstimates[YELLOW_BRICKS] <= FEEDER_WARNING_THRESH)
+            {
+                feederWarningPub.publish(empty);
+            }
+            feederLock.unlock();
         }
-        feederLock.unlock();
-
-
-        ROS_INFO("Asking MES system for next order...");
-        getOrder.request.amount = 1;
-
-        if(!mesGetClient.call(getOrder))
+        else
         {
-            ROS_ERROR("MES servicer call failed!");
-            return -1;
+            ROS_INFO("Stopped!");
         }
-
-        ROS_INFO_STREAM("Got order no. " << getOrder.response.id);
-        ROS_INFO_STREAM("Ticket: " << getOrder.response.ticket);
-        ROS_INFO_STREAM("Blue: " << (int)getOrder.response.blue);
-        ROS_INFO_STREAM("Red: " << (int)getOrder.response.red);
-        ROS_INFO_STREAM("Yellow: " << (int)getOrder.response.yellow);
-
-        auto tStart = std::chrono::high_resolution_clock::now();
-
-        currentOrderContents[BLUE_BRICKS] = getOrder.response.blue;
-        currentOrderContents[RED_BRICKS] = getOrder.response.red;
-        currentOrderContents[YELLOW_BRICKS] = getOrder.response.yellow;
-
-        //Find the next available box:
-        currentBox = 0;
-        while (boxContainsOrder[currentBox] && currentBox < 4)
-            currentBox++;
-
-        ROS_INFO_STREAM("Using box no: " << currentBox);
-
-        if(currentBox == 3) //Start packing in the last box
-        {
-            ROS_INFO("Packing in last box, calling MiR");
-            //Call MiR
-        }
-        else if(currentBox > 3)
-        {
-            ROS_INFO("Waiting for MiR...");
-            //Wait for MiR
-
-            auto tEnd = std::chrono::high_resolution_clock::now();
-            double runTime = std::chrono::duration_cast<std::chrono::seconds>(tEnd - tStart).count();
-            ROS_INFO_STREAM("Total time to pack 4 orders: " << runTime);
-            return 0;
-        }
-
-        // switch (currentBox)
-        // {
-        // case 0:
-        //     currentBoxString = "aboveBoxA";
-        //     break;
-        // case 1:
-        //     currentBoxString = "aboveBoxB";
-        //     break;
-        // case 2:
-        //     currentBoxString = "aboveBoxC";
-        //     break;
-        // case 3:
-        //     currentBoxString = "aboveBoxD";
-        //     break;
         
-        // default:
-        //     ROS_ERROR("Invalid box was selected. Program error, please debug.");
-        //     return -1;
-        // }
+
+        stopLock.lock();
+        stopCopy = isStopped;
+        stopLock.unlock();
+
+        if(!stopCopy)
+        {
+            ROS_INFO("Asking MES system for next order...");
+            getOrderFromMes(currentOrderId, currentOrderContents[BLUE_BRICKS], currentOrderContents[RED_BRICKS], currentOrderContents[YELLOW_BRICKS], currentOrderTicket);
+
+            ROS_INFO_STREAM("Got order no. " << currentOrderId);
+            ROS_INFO_STREAM("Ticket: " << currentOrderTicket);
+            ROS_INFO_STREAM("Blue: " << currentOrderContents[BLUE_BRICKS]);
+            ROS_INFO_STREAM("Red: " << currentOrderContents[RED_BRICKS]);
+            ROS_INFO_STREAM("Yellow: " << currentOrderContents[YELLOW_BRICKS]);
+
+            //Find the next available box:
+            currentBox = 0;
+            while (boxContainsOrder[currentBox] && currentBox < 4)
+                currentBox++;
+
+            ROS_INFO_STREAM("Using box no: " << currentBox);
+        }
+        else
+        {
+            ROS_INFO("Stopped!");
+        }
 
         ROS_INFO_STREAM("Packing in box " << currentBoxString);
 
-        ROS_INFO("Packing blue bricks");
-        while(currentOrderContents[BLUE_BRICKS] > 0) //Pack all the blue bricks
+        stopLock.lock();
+        stopCopy = isStopped;
+        stopLock.unlock();
+
+        if(!stopCopy)
         {
-            //Ask robot to go to preSmall, then graspSmall (auto-grasps)
-            if(!loadAndRunUrProgram("rsd_pick_small.urp"))
-            {
-                ROS_ERROR("Robot failed!");
-                return -1;
-            }
-
-            //Ask vision system to validate brick:
-            ros::WallTime start_ = ros::WallTime::now();
-            visCmd.request.color = "blue";
-            if(!visClient.call(visCmd))
-            {
-                ROS_ERROR("Vision service call failed!");
-                return -1;
-            }
-            ros::WallTime end_ = ros::WallTime::now();
-            double execution_time = (end_ - start_).toNSec() * 1e-6;
-            ROS_INFO_STREAM("Vision time [ms]: " << execution_time);
-
-            ROS_INFO_STREAM("Brick check result: " << (int)visCmd.response.result);
-            if(visCmd.response.result == BRICK_MATCH)
-            {
-                //Ask robot to go to current box:
-                string box;
-                switch (currentBox)
-                {
-                case 0:
-                    box = "rsd_box_a.urp";
-                    break;
-                case 1:
-                    box = "rsd_box_b.urp";
-                    break;
-                case 2:
-                    box = "rsd_box_c.urp";
-                    break;
-                case 3:
-                    box = "rsd_box_d.urp";
-                    break;
-                
-                default:
-                    ROS_ERROR("Invalid box was selected. Program error, please debug.");
-                    return -1;
-                }
-
-                if(!loadAndRunUrProgram(box))
-                {
-                    ROS_ERROR("Robot failed!");
-                    return -1;
-                }
-
-                //Ask vision system to validate brick:
-                if(!visClient.call(visCmd))
-                {
-                    ROS_ERROR("Vision service call failed!");
-                    return -1;
-                }
-
-                if(visCmd.response.result == BRICK_MATCH)
-                {
-                    currentOrderContents[BLUE_BRICKS]--; //One less brick to pack :)
-                    //Open the gripper:
-                    ROS_INFO("Opening the gripper");
-                    gripper.request.state = 0.0;
-                    if(!urIoClient.call(gripper))
-                    {
-                        ROS_ERROR("Failed to contact gripper");
-                        return -1;
-                    }
-                }
-                else
-                {
-                    ROS_ERROR("No brick to drop!");
-
-                    //Ask robot to go to aboveDiscard
-                    if(!loadAndRunUrProgram("rsd_discard.urp"))
-                    {
-                        ROS_ERROR("Robot failed!");
-                        return -1;
-                    }
-                }
-            }
-            else
-            {
-                //Ask robot to go to aboveDiscard
-                if(!loadAndRunUrProgram("rsd_discard.urp"))
-                {
-                    ROS_ERROR("Robot failed!");
-                    return -1;
-                }
-
-                //Open the gripper:
-                ROS_INFO("Opening the gripper");
-                gripper.request.state = 0.0;
-                if(!urIoClient.call(gripper))
-                {
-                    ROS_ERROR("Failed to contact gripper");
-                }
-            }
+            ROS_INFO("Packing blue bricks");
+            pack(BLUE_BRICKS, currentOrderContents[BLUE_BRICKS], currentBox);
+        }
+        else
+        {
+            ROS_INFO("Stopped!");
         }
 
-        ROS_INFO("Packing red bricks");
-        while(currentOrderContents[RED_BRICKS] > 0) //Pack all the red bricks
+        stopLock.lock();
+        stopCopy = isStopped;
+        stopLock.unlock();
+
+        if(!stopCopy)
         {
-            //Ask robot to go to preSmall, then graspSmall (auto-grasps)
-            if(!loadAndRunUrProgram("rsd_pick_medium.urp"))
-            {
-                ROS_ERROR("Robot failed!");
-                return -1;
-            }
-
-            //Ask vision system to validate brick:
-            ros::WallTime start_ = ros::WallTime::now();
-            visCmd.request.color = "red";
-            if(!visClient.call(visCmd))
-            {
-                ROS_ERROR("Vision service call failed!");
-                return -1;
-            }
-            ros::WallTime end_ = ros::WallTime::now();
-            double execution_time = (end_ - start_).toNSec() * 1e-6;
-            ROS_INFO_STREAM("Vision time [ms]: " << execution_time);
-
-            ROS_INFO_STREAM("Brick check result: " << (int)visCmd.response.result);
-            if(visCmd.response.result == BRICK_MATCH)
-            {
-                //Ask robot to go to current box:
-                string box;
-                switch (currentBox)
-                {
-                case 0:
-                    box = "rsd_box_a.urp";
-                    break;
-                case 1:
-                    box = "rsd_box_b.urp";
-                    break;
-                case 2:
-                    box = "rsd_box_c.urp";
-                    break;
-                case 3:
-                    box = "rsd_box_d.urp";
-                    break;
-                
-                default:
-                    ROS_ERROR("Invalid box was selected. Program error, please debug.");
-                    return -1;
-                }
-
-                if(!loadAndRunUrProgram(box))
-                {
-                    ROS_ERROR("Robot failed!");
-                    return -1;
-                }
-
-                //Ask vision system to validate brick:
-                if(!visClient.call(visCmd))
-                {
-                    ROS_ERROR("Vision service call failed!");
-                    return -1;
-                }
-
-                if(visCmd.response.result == BRICK_MATCH)
-                {
-                    currentOrderContents[RED_BRICKS]--; //One less brick to pack :)
-                    //Open the gripper:
-                    ROS_INFO("Opening the gripper");
-                    gripper.request.state = 0.0;
-                    if(!urIoClient.call(gripper))
-                    {
-                        ROS_ERROR("Failed to contact gripper");
-                        return -1;
-                    }
-                }
-                else
-                {
-                    ROS_ERROR("No brick to drop!");
-
-                    //Ask robot to go to aboveDiscard
-                    if(!loadAndRunUrProgram("rsd_discard.urp"))
-                    {
-                        ROS_ERROR("Robot failed!");
-                        return -1;
-                    }
-                }
-            }
-            else
-            {
-                //Ask robot to go to aboveDiscard
-                if(!loadAndRunUrProgram("rsd_discard.urp"))
-                {
-                    ROS_ERROR("Robot failed!");
-                    return -1;
-                }
-
-                //Open the gripper:
-                ROS_INFO("Opening the gripper");
-                gripper.request.state = 0.0;
-                if(!urIoClient.call(gripper))
-                {
-                    ROS_ERROR("Failed to contact gripper");
-                }
-            }
+            ROS_INFO("Packing red bricks");
+            pack(RED_BRICKS, currentOrderContents[RED_BRICKS], currentBox);
         }
-
-        ROS_INFO("Packing yellow bricks");
-        while(currentOrderContents[YELLOW_BRICKS] > 0) //Pack all the blue bricks
+        else
         {
-            //Ask robot to go to preSmall, then graspSmall (auto-grasps)
-            if(!loadAndRunUrProgram("rsd_pick_big.urp"))
-            {
-                ROS_ERROR("Robot failed!");
-                return -1;
-            }
-
-            //Ask vision system to validate brick:
-            ros::WallTime start_ = ros::WallTime::now();
-            visCmd.request.color = "yellow";
-            if(!visClient.call(visCmd))
-            {
-                ROS_ERROR("Vision service call failed!");
-                return -1;
-            }
-            ros::WallTime end_ = ros::WallTime::now();
-            double execution_time = (end_ - start_).toNSec() * 1e-6;
-            ROS_INFO_STREAM("Vision time [ms]: " << execution_time);
-
-            ROS_INFO_STREAM("Brick check result: " << (int)visCmd.response.result);
-            if(visCmd.response.result == BRICK_MATCH)
-            {
-                //Ask robot to go to current box:
-                string box;
-                switch (currentBox)
-                {
-                case 0:
-                    box = "rsd_box_a.urp";
-                    break;
-                case 1:
-                    box = "rsd_box_b.urp";
-                    break;
-                case 2:
-                    box = "rsd_box_c.urp";
-                    break;
-                case 3:
-                    box = "rsd_box_d.urp";
-                    break;
-                
-                default:
-                    ROS_ERROR("Invalid box was selected. Program error, please debug.");
-                    return -1;
-                }
-
-                if(!loadAndRunUrProgram(box))
-                {
-                    ROS_ERROR("Robot failed!");
-                    return -1;
-                }
-
-                //Ask vision system to validate brick:
-                if(!visClient.call(visCmd))
-                {
-                    ROS_ERROR("Vision service call failed!");
-                    return -1;
-                }
-
-                if(visCmd.response.result == BRICK_MATCH)
-                {
-                    currentOrderContents[YELLOW_BRICKS]--; //One less brick to pack :)
-                    //Open the gripper:
-                    ROS_INFO("Opening the gripper");
-                    gripper.request.state = 0.0;
-                    if(!urIoClient.call(gripper))
-                    {
-                        ROS_ERROR("Failed to contact gripper");
-                        return -1;
-                    }
-                }
-                else
-                {
-                    ROS_ERROR("No brick to drop!");
-
-                    //Ask robot to go to aboveDiscard
-                    if(!loadAndRunUrProgram("rsd_discard.urp"))
-                    {
-                        ROS_ERROR("Robot failed!");
-                        return -1;
-                    }
-                }
-            }
-            else
-            {
-                //Ask robot to go to aboveDiscard
-                if(!loadAndRunUrProgram("rsd_discard.urp"))
-                {
-                    ROS_ERROR("Robot failed!");
-                    return -1;
-                }
-
-                //Open the gripper:
-                ROS_INFO("Opening the gripper");
-                gripper.request.state = 0.0;
-                if(!urIoClient.call(gripper))
-                {
-                    ROS_ERROR("Failed to contact gripper");
-                }
-            }
+            ROS_INFO("Stopped!");
         }
+        
+        stopLock.lock();
+        stopCopy = isStopped;
+        stopLock.unlock();
 
-       
-
+        if(!stopCopy)
+        {
+            ROS_INFO("Packing yellow bricks");
+            pack(YELLOW_BRICKS, currentOrderContents[YELLOW_BRICKS], currentBox);
+        }
+        else
+        {
+            ROS_INFO("Stopped!");
+        }
+        
         boxContainsOrder[currentBox] = true;
 
         //Now the order should be packed, notify MES-node:
-        ROS_INFO_STREAM("Deleting order with id " << getOrder.response.id);
-        delOrder.request.id = getOrder.response.id;
-        delOrder.request.ticket = getOrder.response.ticket;
+        stopLock.lock();
+        stopCopy = isStopped;
+        stopLock.unlock();
 
-        if(!mesDelClient.call(delOrder))
+        if(!stopCopy)
         {
-            ROS_INFO("Failed to delete order!");
-            return -1;
-        }
+            ROS_INFO_STREAM("Deleting order with id " << getOrder.response.id);
+            delOrder.request.id = currentOrderId;
+            delOrder.request.ticket = currentOrderTicket;
 
-        ROS_INFO("Deleted order!");
+            if(!mesDelClient.call(delOrder))
+            {
+                ROS_INFO("Failed to delete order!");
+                return -1;
+            }
+
+            ROS_INFO("Deleted order!");
+        }
         //Service-call to MES-node
 
         //Call MiR:
@@ -695,4 +440,214 @@ void playSystem(const std_msgs::Empty::ConstPtr& msg)
         isPaused = false;
     }
     pauseLock.unlock();
+
+    stopLock.lock();
+    if(isStopped)
+    {
+        ROS_INFO("Robot was stopped!");
+        isStopped = false;
+    }
+    stopLock.unlock();
+}
+
+void stopSystem(const std_msgs::Empty::ConstPtr& msg)
+{
+    stopLock.lock();
+    isStopped = true;
+    stopLock.unlock();
+
+    orderLock.lock();
+    currentOrderContents[BLUE_BRICKS] = 0;
+    currentOrderContents[RED_BRICKS] = 0;
+    currentOrderContents[YELLOW_BRICKS] = 0;
+    currentOrderId = -1;
+    currentOrderTicket = -1;
+    orderLock.unlock();
+
+    if(!robotStop.call(robotStopSrv))
+    {
+        ROS_ERROR("Failed to stop robot");
+    }
+}
+
+/**
+ * Functions
+ **/
+
+void getOrderFromMes(int &orderId, int &b, int &r, int &y, string &ticket)
+{
+    orderLock.lock();
+    //Call service:
+    getOrder.request.amount = 1;
+
+    if(!mesGetClient.call(getOrder))
+    {
+        ROS_ERROR("MES servicer call failed!");
+        orderLock.unlock();
+        return;
+    }
+
+    //Update param.:
+    orderId = getOrder.response.id;
+    b = getOrder.response.blue;
+    r = getOrder.response.red;
+    y = getOrder.response.yellow;
+    ticket = getOrder.response.ticket;
+    orderLock.unlock();
+}
+
+void pack(int color, int amount, int box)
+{
+    ROS_INFO("Packing order!");
+    ROS_INFO_STREAM("Color: " << color);
+    ROS_INFO_STREAM("Amount: " << amount);
+    ROS_INFO_STREAM("Box: " << box);
+
+    string urPickProg;
+    string colorName;
+
+    switch(color)
+    {
+        case BLUE_BRICKS:
+            urPickProg = "rsd_pick_small.urp";
+            colorName = "blue";
+            break;
+        case RED_BRICKS:
+            urPickProg = "rsd_pick_medium.urp";
+            colorName = "red";
+            break;
+        case YELLOW_BRICKS:
+            urPickProg = "rsd_pick_big.urp";
+            colorName = "yellow";
+            break;
+    }
+
+    bool stopCopy;
+    while(currentOrderContents[color] > 0) //Pack all the "color" bricks
+    {
+        //Pickup a brick:
+        if(!loadAndRunUrProgram(urPickProg))
+        {
+            ROS_ERROR("Robot failed!");
+            return;
+        }
+
+        stopLock.lock();
+        stopCopy = isStopped;
+        stopLock.unlock();
+
+        if(stopCopy)
+            return;
+
+        //Ask vision system to validate brick:
+        ros::WallTime start_ = ros::WallTime::now();
+        visCmd.request.color = colorName;
+        if(!visClient.call(visCmd))
+        {
+            ROS_ERROR("Vision service call failed!");
+            return;
+        }
+        ros::WallTime end_ = ros::WallTime::now();
+        double execution_time = (end_ - start_).toNSec() * 1e-6;
+        ROS_INFO_STREAM("Vision time [ms]: " << execution_time);
+
+        ROS_INFO_STREAM("Brick check result: " << (int)visCmd.response.result);
+        if(visCmd.response.result == BRICK_MATCH)
+        {
+            //Ask robot to go to current box:
+            string boxProgram;
+            switch (box)
+            {
+            case 0:
+                boxProgram = "rsd_box_a.urp";
+                break;
+            case 1:
+                boxProgram = "rsd_box_b.urp";
+                break;
+            case 2:
+                boxProgram = "rsd_box_c.urp";
+                break;
+            case 3:
+                boxProgram = "rsd_box_d.urp";
+                break;
+            
+            default:
+                ROS_ERROR("Invalid box was selected. Program error, please debug.");
+                return;
+            }
+
+            stopLock.lock();
+            stopCopy = isStopped;
+            stopLock.unlock();
+
+            if(stopCopy)
+                return;
+            
+            if(!loadAndRunUrProgram(boxProgram))
+            {
+                ROS_ERROR("Robot failed!");
+                return;
+            }
+
+            //Ask vision system to validate brick:
+            if(!visClient.call(visCmd))
+            {
+                ROS_ERROR("Vision service call failed!");
+                return;
+            }
+
+            if(visCmd.response.result == BRICK_MATCH)
+            {
+                currentOrderContents[color]--; //One less brick to pack :)
+                //Open the gripper:
+                ROS_INFO("Opening the gripper");
+                gripper.request.state = 0.0;
+                if(!urIoClient.call(gripper))
+                {
+                    ROS_ERROR("Failed to contact gripper");
+                    return;
+                }
+            }
+            else
+            {
+                ROS_ERROR("No brick to drop!");
+
+                stopLock.lock();
+                stopCopy = isStopped;
+                stopLock.unlock();
+
+                if(stopCopy)
+                    return;
+                //Ask robot to go to aboveDiscard
+                if(!loadAndRunUrProgram("rsd_discard.urp"))
+                {
+                    ROS_ERROR("Robot failed!");
+                    return;
+                }
+            }
+        }
+        else
+        {
+            stopLock.lock();
+            stopCopy = isStopped;
+            stopLock.unlock();
+
+            if(stopCopy)
+                return;
+            //Ask robot to go to aboveDiscard
+            if(!loadAndRunUrProgram("rsd_discard.urp"))
+            {
+                ROS_ERROR("Robot failed!");
+                return;
+            }
+
+            //Open the gripper:
+            ROS_INFO("Opening the gripper");
+            gripper.request.state = 0.0;
+            if(!urIoClient.call(gripper))
+            {
+                ROS_ERROR("Failed to contact gripper");
+            }
+        }
+    }
 }
