@@ -12,8 +12,11 @@
     <!-- Start MES -->
     <include file="$(find mes_ordering)/launch/mes_ordering.launch"/>
 
+    <!-- Start GUI -->
+    <include file="$(find gui)/launch/start_gui.launch"/>
+
     <!-- Start system manager-->
-    <arg name="node_start_delay" default="5.0" />  
+    <arg name="node_start_delay" default="5.0" />
     <node name="system_manager" pkg="system_manager" type="system_manager_node" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>
 
 </launch>
