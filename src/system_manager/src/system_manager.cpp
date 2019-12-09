@@ -152,7 +152,7 @@ int main(int argc, char** argv)
     urIoClient = n.serviceClient<ur_msgs::SetIO>("/ur_hardware_interface/set_io");
 
     //MiR interface:
-    ros::ServiceClient mirClient = n.serviceClient<mir_api::mir_api_action>("/mir_api");
+    ros::ServiceClient mirClient = n.serviceClient<mir_api::mir_api_action>("/mir_api/service");
     mir_api::mir_api_action mir;
 
     //Sub. to system topics:
@@ -314,51 +314,59 @@ int main(int argc, char** argv)
 
             ROS_INFO("Deleted order!");
         }
-        //Service-call to MES-node
 
         //Call MiR:
-        // mir.request.action = MIR_CALL;
-        // if(!mirClient.call(mir))
-        // {
-        //     ROS_ERROR("Service call to mir failed");
-        //     return -1;
-        // }
+        ROS_INFO("Calling MiR!");
+        mir.request.action = MIR_CALL;
+        if(!mirClient.call(mir))
+        {
+            ROS_ERROR("Service call to mir failed");
+            return -1;
+        }
 
-        // if(mir.response.result > 0)
-        // {
-        //     ROS_INFO("MiR is on the way!");
-        // }
-        // else
-        // {
-        //     ROS_INFO("MiR is busy");
-        // }
+        if(mir.response.result > 0)
+        {
+            ROS_INFO("MiR is on the way!");
+        }
+        else
+        {
+            ROS_INFO("MiR is busy");
+        }
 
-        // mir.request.action = MIR_POLL_ARRIVED;
-        // if(!mirClient.call(mir))
-        // {
-        //     ROS_ERROR("Service call to mir failed");
-        //     return -1;
-        // }
+        mir.request.action = MIR_POLL_ARRIVED;
+        if(!mirClient.call(mir))
+        {
+            ROS_ERROR("Service call to mir failed");
+            return -1;
+        }
 
-        // while(mir.response.result == 0)
-        // {
-        //     ros::Duration(1).sleep();
-        //     if(!mirClient.call(mir))
-        //     {
-        //         ROS_ERROR("Service call to mir failed");
-        //         return -1;
-        //     }
-        // }
+        while(mir.response.result == 0)
+        {
+            ros::Duration(1).sleep();
+            if(!mirClient.call(mir))
+            {
+                ROS_ERROR("Service call to mir failed");
+                return -1;
+            }
+        }
 
-        // ROS_INFO("MiR has arrived!");
-        // mir.request.action = MIR_RELEASE;
-        // if(!mirClient.call(mir))
-        // {
-        //     ROS_ERROR("Service call to mir failed");
-        //     return -1;
-        // }
+        ROS_INFO("MiR has arrived!");
+        //Move packed orders onto MiR:
+        ROS_INFO("Placing order on MiR!");
+        loadAndRunUrProgram("rsd_mir_place.urp");
 
-        // ROS_INFO("MiR is released!");
+        //Take empty boxes from MiR:
+        ROS_INFO("Taking empty boxes from MiR");
+        loadAndRunUrProgram("rsd_mir_pickup.urp");
+
+        mir.request.action = MIR_RELEASE;
+        if(!mirClient.call(mir))
+        {
+            ROS_ERROR("Service call to mir failed");
+            return -1;
+        }
+
+        ROS_INFO("MiR is released!");
 
 
 
@@ -463,11 +471,6 @@ void stopSystem(const std_msgs::Empty::ConstPtr& msg)
     currentOrderId = -1;
     currentOrderTicket = -1;
     orderLock.unlock();
-
-    if(!robotStop.call(robotStopSrv))
-    {
-        ROS_ERROR("Failed to stop robot");
-    }
 }
 
 /**
@@ -600,6 +603,12 @@ void pack(int color, int amount, int box)
             {
                 currentOrderContents[color]--; //One less brick to pack :)
                 //Open the gripper:
+                stopLock.lock();
+                stopCopy = isStopped;
+                stopLock.unlock();
+
+                if(stopCopy)
+                    return;
                 ROS_INFO("Opening the gripper");
                 gripper.request.state = 0.0;
                 if(!urIoClient.call(gripper))
