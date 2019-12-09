@@ -5,8 +5,8 @@ std::vector<double> preGraspSmall = {0.843428, -1.23899, 1.76526, 0.30557, 1.317
 std::vector<double> preGraspMedium = {1.09693, -1.2536, 1.74324, 0.327678, 1.46964, -1.57507};
 std::vector<double> preGraspLarge = {1.4015, -1.18991, 1.66153, 0.338223, 1.71877, -1.26703};
 
-std::vector<double> graspSmall = {0.862274, -1.06465, 1.65372, 0.261691, 1.31075, -1.75682};
-std::vector<double> graspMedium = {1.10091, -1.08257, 1.6599, 0.214763, 1.45441, -1.60761};
+std::vector<double> graspSmall = {0.865684, -1.06005, 1.66302, 0.23882, 1.30627, -1.78807};
+std::vector<double> graspMedium = {1.12537, -1.07838, 1.6617, 0.204433, 1.51713, -1.60473};
 std::vector<double> graspLarge = {1.36148, -1.00791, 1.51369, 0.319509, 1.70587, -1.42803};
 
 std::vector<double> aboveBoxA = {0.898476, -1.24867, 1.76276, 1.1328, 1.53992, -0.233797};

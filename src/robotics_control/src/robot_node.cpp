@@ -220,34 +220,37 @@ void pauseRobot(const std_msgs::Empty::ConstPtr& msg)
         ROS_ERROR_STREAM("Service call succeeded, but failed to stop robot! Speed: " << 0.01);
     }
 
+    //Test:
+    mgPtr->stop();
+
     //TODO: Sleep here?
 
     //Stop-hack: Plan to current config and execute:
-    moveit::planning_interface::MoveGroupInterface::Plan my_plan;
-    std::vector<double> q;
-    q = mgPtr->getCurrentJointValues();
-    mgPtr->setJointValueTarget(q);
-    if(mgPtr->plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS)
-    {
-        speed.request.speed_slider_fraction = MAX_SPEED;
+    // moveit::planning_interface::MoveGroupInterface::Plan my_plan;
+    // std::vector<double> q;
+    // q = mgPtr->getCurrentJointValues();
+    // mgPtr->setJointValueTarget(q);
+    // if(mgPtr->plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS)
+    // {
+    //     speed.request.speed_slider_fraction = MAX_SPEED;
 
-        if (!pausePtr->call(speed))
-        {
-            ROS_ERROR_STREAM("Failed to stop robot! Speed: " << MAX_SPEED);
-        }
+    //     if (!pausePtr->call(speed))
+    //     {
+    //         ROS_ERROR_STREAM("Failed to stop robot! Speed: " << MAX_SPEED);
+    //     }
 
-        if (!speed.response.success)
-        {
-            ROS_ERROR_STREAM("Service call succeeded, but failed to stop robot! Speed: " << MAX_SPEED);
-        }
+    //     if (!speed.response.success)
+    //     {
+    //         ROS_ERROR_STREAM("Service call succeeded, but failed to stop robot! Speed: " << MAX_SPEED);
+    //     }
 
-        mgPtr->move();
-        ROS_INFO("Robot stopped");
-    }
-    else
-    {
-        ROS_ERROR("Failed to stop robot!");
-    }
+    //     mgPtr->move();
+    //     ROS_INFO("Robot stopped");
+    // }
+    // else
+    // {
+    //     ROS_ERROR("Failed to stop robot!");
+    // }
 }
 
 void playRobot(const std_msgs::Empty::ConstPtr& msg)
