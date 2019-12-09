@@ -2,13 +2,17 @@
 import rospy
 from std_msgs.msg import String
 from ordering_client import post_pml
+from local_log.msg import system_log_msg
+
+pub = rospy.Publisher('system_log', system_log_msg, queue_size=10)
 
 
 def callback(data):
-    rospy.loginfo(rospy.get_caller_id() + "I heard %s", data.data)
+    rospy.loginfo(data.data)
 
     msgs = data.data
 
+    pub.publish("INFO", "pml_logging", msgs)
     post_pml(msgs)
 
 
@@ -22,6 +26,8 @@ def listener():
     rospy.init_node('pml_logging', anonymous=True)
 
     rospy.Subscriber("packml_state", String, callback)
+
+    print("MES PackML Ready")
 
     # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
