@@ -28,16 +28,20 @@
         });
 
         // Play button:
-        var addTwoIntsClient = new ROSLIB.Service({
+        var playPub = new ROSLIB.Topic(
+        {
             ros : ros,
-            name : '/ur_hardware_interface/dashboard/play',
-            serviceType : 'rospy_tutorials/AddTwoInts'
+            name : '/gui_play',
+            messageType : 'std_msgs/Empty'
         });
-        
-        var request = new ROSLIB.ServiceRequest({
-            a : 1,
-            b : 2
-        });
+
+        var playMsg = new ROSLIB.Message();
+
+        function playBtnPres()
+        {
+            playPub.publish(playMsg);
+            return true;
+        }
 
         // Pause button:
         var pausePub = new ROSLIB.Topic(
@@ -100,44 +104,61 @@
             return true;
         });
 
-        //Get # blue bricks:
-        var blueNoSub = new ROSLIB.Topic({
+        //Sub to order info:
+        var orderInfoSub = new ROSLIB.Topic({
             ros : ros,
-            name : '/no_of_blue_bricks',
-            messageType : 'std_msgs/Int16'
+            name : '/order_info',
+            messageType : 'mes_ordering/orderInfoMsg'
         });
 
-        blueNoSub.subscribe(function(message)
+        orderInfoSub.subscribe(function(message)
         {
-            document.getElementById("blue_bricks").innerHTML = message.data;
-            return true;
+            console.log("Setting order info!");
+            document.getElementById("blue_bricks").innerHTML = message.blue;
+            document.getElementById("red_bricks").innerHTML = message.red;
+            document.getElementById("yellow_bricks").innerHTML = message.yellow;
+            document.getElementById("order_no").innerHTML = message.id;
+            console.log("Info set!");
         });
+
+        // //Get # blue bricks:
+        // var blueNoSub = new ROSLIB.Topic({
+        //     ros : ros,
+        //     name : '/no_of_blue_bricks',
+        //     messageType : 'std_msgs/Int16'
+        // });
+
+        // blueNoSub.subscribe(function(message)
+        // {
+        //     document.getElementById("blue_bricks").innerHTML = message.data;
+        //     return true;
+        // });
         
-        //Get # red bricks:
-        var redNoSub = new ROSLIB.Topic({
-            ros : ros,
-            name : '/no_of_red_bricks',
-            messageType : 'std_msgs/Int16'
-        });
+        // //Get # red bricks:
+        // var redNoSub = new ROSLIB.Topic({
+        //     ros : ros,
+        //     name : '/no_of_red_bricks',
+        //     messageType : 'std_msgs/Int16'
+        // });
 
-        redNoSub.subscribe(function(message)
-        {
-            document.getElementById("red_bricks").innerHTML = message.data;
-            return true;
-        });
+        // redNoSub.subscribe(function(message)
+        // {
+        //     document.getElementById("red_bricks").innerHTML = message.data;
+        //     return true;
+        // });
 
-        //Get # yellow bricks:
-        var yellowNoSub = new ROSLIB.Topic({
-            ros : ros,
-            name : '/no_of_yellow_bricks',
-            messageType : 'std_msgs/Int16'
-        });
+        // //Get # yellow bricks:
+        // var yellowNoSub = new ROSLIB.Topic({
+        //     ros : ros,
+        //     name : '/no_of_yellow_bricks',
+        //     messageType : 'std_msgs/Int16'
+        // });
 
-        yellowNoSub.subscribe(function(message)
-        {
-            document.getElementById("yellow_bricks").innerHTML = message.data;
-            return true;
-        });
+        // yellowNoSub.subscribe(function(message)
+        // {
+        //     document.getElementById("yellow_bricks").innerHTML = message.data;
+        //     return true;
+        // });
 
         // Get status:
         var statusSub = new ROSLIB.Topic({
