@@ -7,6 +7,8 @@
 #include <std_msgs/Int8.h>
 #include <std_msgs/Int16.h>
 #include <std_msgs/Empty.h>
+#include <std_msgs/Bool.h>
+#include <std_msgs/String.h>
 
 #include <ur_msgs/SetIO.h>
 
@@ -53,10 +55,12 @@ int feederEstimates[3] = {FEEDER_MAX, FEEDER_MAX, FEEDER_MAX};
 int currentBox;
 string currentBoxString;
 bool running = true;
+bool isPaused = false;
 
 //Callbacks:
 void feederRefill(const std_msgs::Empty::ConstPtr& msg);
 void pauseSystem(const std_msgs::Empty::ConstPtr& msg);
+void playSystem(const std_msgs::Empty::ConstPtr& msg);
 
 //Robotics:
 bool loadAndRunUrProgram(string filename);
@@ -77,13 +81,15 @@ ur_dashboard_msgs::GetProgramState robotGetProgStateSrv;
 
 //Mutexes:
 mutex feederLock;
+mutex pauseLock;
+mutex urInterfaceLock;
 
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "system_manager");
     ros::NodeHandle n;
 
-    ros::AsyncSpinner spinner(1);
+    ros::AsyncSpinner spinner(2);
     spinner.start();
 
     //Setup service clients:
@@ -136,6 +142,11 @@ int main(int argc, char** argv)
     ros::ServiceClient mirClient = n.serviceClient<mir_api::mir_api_action>("/mir_api");
     mir_api::mir_api_action mir;
 
+    //Sub. to system topics:
+    ros::Subscriber pauseSub = n.subscribe<std_msgs::Empty>("/gui_pause", 1, pauseSystem);
+    ros::Subscriber playSub = n.subscribe<std_msgs::Empty>("/gui_play", 1, playSystem);
+
+
     //Start packing:
     //Open the gripper:
     ROS_INFO("Opening the gripper");
@@ -178,9 +189,9 @@ int main(int argc, char** argv)
 
         ROS_INFO_STREAM("Got order no. " << getOrder.response.id);
         ROS_INFO_STREAM("Ticket: " << getOrder.response.ticket);
-        ROS_INFO_STREAM("Blue: " << getOrder.response.blue);
-        ROS_INFO_STREAM("Red: " << getOrder.response.red);
-        ROS_INFO_STREAM("Yellow: " << getOrder.response.yellow);
+        ROS_INFO_STREAM("Blue: " << (int)getOrder.response.blue);
+        ROS_INFO_STREAM("Red: " << (int)getOrder.response.red);
+        ROS_INFO_STREAM("Yellow: " << (int)getOrder.response.yellow);
 
         auto tStart = std::chrono::high_resolution_clock::now();
 
@@ -630,6 +641,19 @@ bool loadAndRunUrProgram(string filename)
         return false;
     }
 
+    //Check if system is paused:
+    pauseLock.lock();
+    bool isPausedCopy = isPaused;
+    pauseLock.unlock();
+
+    while(isPausedCopy)
+    {
+        pauseLock.lock();
+        isPausedCopy = isPaused;
+        pauseLock.unlock();
+        ros::Duration(0.1).sleep();
+    }
+
     if(!robotPlay.call(robotPlaySrv))
     {
         ROS_ERROR_STREAM("Failed to execute UR program " << robotLoadSrv.request.filename);
@@ -638,7 +662,6 @@ bool loadAndRunUrProgram(string filename)
 
     ros::Duration(1.0).sleep();
 
-    robotGetProgStateSrv;
     do
     {
         if(!robotGetProgState.call(robotGetProgStateSrv))
@@ -650,11 +673,26 @@ bool loadAndRunUrProgram(string filename)
         ros::Duration(0.5).sleep();
     } while (robotGetProgStateSrv.response.state.state == robotGetProgStateSrv.response.state.PLAYING);
     
-
     return true;
 }
 
 void pauseSystem(const std_msgs::Empty::ConstPtr& msg)
 {
-    
+    ROS_INFO("Pausing!");
+    pauseLock.lock();
+    isPaused = true;
+    pauseLock.unlock();
+    ROS_INFO("Paused!");
+}
+
+void playSystem(const std_msgs::Empty::ConstPtr& msg)
+{
+    ROS_INFO("Play!");
+    pauseLock.lock();
+    if(isPaused)
+    {
+        ROS_INFO("Robot was paused!");
+        isPaused = false;
+    }
+    pauseLock.unlock();
 }
