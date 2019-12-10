@@ -14,6 +14,7 @@
 
     <!-- Start GUI -->
     <include file="$(find gui)/launch/start_gui.launch"/>
+    <node name="system_manager_packml" pkg="system_manager" type="system_manager_packml" output="screen"/>
 
     <!-- Start system manager-->
     <arg name="node_start_delay" default="5.0" />

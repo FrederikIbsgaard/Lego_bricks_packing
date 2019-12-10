@@ -13,6 +13,9 @@
     <include file="$(find ur5_e_moveit_config)/launch/ur5_e_moveit_planning_execution.launch"/>
 
     <!-- Start robotics node DEPRECATED -->
+    <node name="robot_node" pkg="robot_control" type="robot_state_monitor" output="screen"/>
+    
+    <!-- Start robotics node DEPRECATED -->
     <!-- <node name="robot_node" pkg="robot_control" type="robot_node" output="screen"/> -->
 
 </launch>
