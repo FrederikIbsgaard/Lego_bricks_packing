@@ -21,8 +21,8 @@
 #include "mes_ordering/DeleteOrder_srv.h"
 #include "mes_ordering/GetOrder_srv.h"
 #include "mir_api/mir_api_action.h"
-
-//Topics:
+#include "system_manager/get_packml_state.h"
+#include "system_manager/get_feeder_status.h"
 
 using namespace std;
 
@@ -41,11 +41,6 @@ using namespace std;
 #define MIR_POLL_ARRIVED 2
 #define MIR_RELEASE      3
 
-//Order info:
-int currentOrderContents[3]; //blue, red, yellow
-bool boxContainsOrder[4] = {false, false, false, false};
-int currentOrderId;
-string currentOrderTicket;
 
 //Estimate of feeder contents:
 int feederEstimates[3] = {FEEDER_MAX, FEEDER_MAX, FEEDER_MAX};
@@ -56,9 +51,15 @@ string currentBoxString;
 bool running = true;
 bool isPaused = false;
 bool isStopped = true;
+int bricksDiscarded;
 
-//OEE:
-ros::Publisher oeePub;
+//Order info:
+int currentOrderContents[4][3]; //blue, red, yellow
+bool boxContainsOrder[4] = {false, false, false, false};
+int currentOrderIds[4];
+string currentOrderTickets[4];
+int currentOrderIdx;
+
 
 //Callbacks:
 void feederRefill(const std_msgs::Empty::ConstPtr& msg);
@@ -86,11 +87,25 @@ ur_dashboard_msgs::GetProgramState robotGetProgStateSrv;
 ros::ServiceClient urIoClient;
 ur_msgs::SetIO gripper;
 
+//Vision:
 ros::ServiceClient visClient;
 vision::check_brick visCmd;
 
+//MES:
 ros::ServiceClient mesGetClient;
 mes_ordering::GetOrder_srv getOrder;
+
+//OEE:
+ros::Publisher oeePub;
+
+//PackML:
+ros::ServiceClient packmlGetClient;
+system_manager::get_packml_state getPackml;
+
+ros::Publisher packmlPub;
+
+//Feeder:
+bool getFeederStatus(system_manager::get_feeder_status::Request &req, system_manager::get_feeder_status::Response &res);
 
 //Mutexes:
 mutex feederLock;
@@ -136,8 +151,9 @@ int main(int argc, char** argv)
     visClient = n.serviceClient<vision::check_brick>("/check_brick");
 
     //Publisher to PackML action-topic:
-    ros::Publisher packmlPub = n.advertise<std_msgs::Int8>("/action_state", 5);
-    std_msgs::Int8 packmlAction;
+    packmlPub = n.advertise<std_msgs::Int8>("/action_state", 5);
+
+    packmlGetClient = n.serviceClient<system_manager::get_packml_state>("/get_packml_state");
 
     //Publisher to feeder warning and alert:
     ros::Publisher feederWarningPub = n.advertise<std_msgs::Empty>("/feeder_warning", 1);
@@ -166,7 +182,14 @@ int main(int argc, char** argv)
     //OEE:
     oeePub = n.advertise<std_msgs::String>("/oee_calculator", 10);
 
+    //Advertise feeder status service:
+    ros::ServiceServer feederStatusService = n.advertiseService("/get_feeder_status", getFeederStatus);
+
     //Start packing:
+    currentOrderIdx = 0;
+    currentBox = 0;
+    bricksDiscarded = 0;
+
     //Open the gripper:
     ROS_INFO("Opening the gripper");
     gripper.request.state = 0.0;
@@ -204,17 +227,47 @@ int main(int argc, char** argv)
         stopCopy = isStopped;
         stopLock.unlock();
 
+        //Check feeder status:
         if(!stopCopy)
         {
             ROS_INFO("Checking feeder status..");
             std_msgs::Empty empty;
 
             feederLock.lock();
-            if(feederEstimates[BLUE_BRICKS] <= 0 || feederEstimates[RED_BRICKS] <= 0 || feederEstimates[YELLOW_BRICKS] <= 0)
+            if(feederEstimates[BLUE_BRICKS] <= 0 || feederEstimates[RED_BRICKS] <= 0 || feederEstimates[YELLOW_BRICKS] <= 0 || currentOrderTickets[currentOrderIdx] == "None")
             {
                 feederAlertPub.publish(empty);
                 ROS_INFO("Waiting for feeders to be refilled.");
-                //Insert loop for waiting...
+                
+                //Go to "HOLDING":
+                std_msgs::Int8 packmlAction;
+                packmlAction.data = AC_HOLD;
+                packmlPub.publish(packmlAction);
+
+                //Go to "HELD":
+                packmlAction.data = AC_SC;
+                packmlPub.publish(packmlAction);
+
+                //Wait for feeders to be refilled:
+                int feederEstCopy[3];
+                do
+                {
+                    feederLock.lock();
+                    feederEstCopy[BLUE_BRICKS] = feederEstimates[BLUE_BRICKS];
+                    feederEstCopy[RED_BRICKS] = feederEstimates[RED_BRICKS];
+                    feederEstCopy[YELLOW_BRICKS] = feederEstimates[YELLOW_BRICKS];
+                    feederLock.unlock();
+                } while (feederEstimates[BLUE_BRICKS] != FEEDER_MAX && feederEstimates[RED_BRICKS] == FEEDER_MAX && feederEstimates[YELLOW_BRICKS] == FEEDER_MAX);
+
+                //Go to "UNHOLDING":
+                packmlAction.data = AC_UNHOLD;
+                packmlPub.publish(packmlAction);
+
+                //Go back to "EXECUTE":
+                packmlAction.data = AC_SC;
+                packmlPub.publish(packmlAction);
+
+                
             }
             else if(feederEstimates[BLUE_BRICKS] <= FEEDER_WARNING_THRESH || feederEstimates[RED_BRICKS] <= FEEDER_WARNING_THRESH || feederEstimates[YELLOW_BRICKS] <= FEEDER_WARNING_THRESH)
             {
@@ -235,20 +288,20 @@ int main(int argc, char** argv)
         if(!stopCopy)
         {
             ROS_INFO("Asking MES system for next order...");
-            getOrderFromMes(currentOrderId, currentOrderContents[BLUE_BRICKS], currentOrderContents[RED_BRICKS], currentOrderContents[YELLOW_BRICKS], currentOrderTicket);
+            getOrderFromMes(currentOrderIds[currentOrderIdx], currentOrderContents[currentOrderIdx][BLUE_BRICKS], currentOrderContents[currentOrderIdx][RED_BRICKS], currentOrderContents[currentOrderIdx][YELLOW_BRICKS], currentOrderTickets[currentOrderIdx]);
 
-            ROS_INFO_STREAM("Got order no. " << currentOrderId);
-            ROS_INFO_STREAM("Ticket: " << currentOrderTicket);
+            ROS_INFO_STREAM("Got order no. " << currentOrderIds[currentOrderIdx]);
+            ROS_INFO_STREAM("Ticket: " << currentOrderTickets[currentOrderIdx]);
             ROS_INFO_STREAM("Blue: " << currentOrderContents[BLUE_BRICKS]);
             ROS_INFO_STREAM("Red: " << currentOrderContents[RED_BRICKS]);
             ROS_INFO_STREAM("Yellow: " << currentOrderContents[YELLOW_BRICKS]);
 
-            //Find the next available box:
-            currentBox = 0;
-            while (boxContainsOrder[currentBox] && currentBox < 4)
-                currentBox++;
-
             ROS_INFO_STREAM("Using box no: " << currentBox);
+
+            //OEE: Tell calc that I got new order:
+            std_msgs::String s;
+            s.data = "orderTaken";
+            oeePub.publish(s);
         }
         else
         {
@@ -264,7 +317,7 @@ int main(int argc, char** argv)
         if(!stopCopy)
         {
             ROS_INFO("Packing blue bricks");
-            pack(BLUE_BRICKS, currentOrderContents[BLUE_BRICKS], currentBox);
+            pack(BLUE_BRICKS, currentOrderContents[currentOrderIdx][BLUE_BRICKS], currentBox);
         }
         else
         {
@@ -278,7 +331,7 @@ int main(int argc, char** argv)
         if(!stopCopy)
         {
             ROS_INFO("Packing red bricks");
-            pack(RED_BRICKS, currentOrderContents[RED_BRICKS], currentBox);
+            pack(RED_BRICKS, currentOrderContents[currentOrderIdx][RED_BRICKS], currentBox);
         }
         else
         {
@@ -292,7 +345,11 @@ int main(int argc, char** argv)
         if(!stopCopy)
         {
             ROS_INFO("Packing yellow bricks");
-            pack(YELLOW_BRICKS, currentOrderContents[YELLOW_BRICKS], currentBox);
+            pack(YELLOW_BRICKS, currentOrderContents[currentOrderIdx][YELLOW_BRICKS], currentBox);
+
+            currentOrderIdx++;
+            currentBox++;
+            boxContainsOrder[currentBox] = true;
         }
         else
         {
@@ -301,82 +358,137 @@ int main(int argc, char** argv)
         
         boxContainsOrder[currentBox] = true;
 
-        //Now the order should be packed, notify MES-node:
         stopLock.lock();
         stopCopy = isStopped;
         stopLock.unlock();
 
         if(!stopCopy)
         {
-            ROS_INFO_STREAM("Deleting order with id " << getOrder.response.id);
-            delOrder.request.id = currentOrderId;
-            delOrder.request.ticket = currentOrderTicket;
-
-            if(!mesDelClient.call(delOrder))
+            if(currentOrderIdx == 3)
             {
-                ROS_INFO("Failed to delete order!");
-                return -1;
-            }
+                //Call MiR:
+                ROS_INFO("Calling MiR!");
+                mir.request.action = MIR_CALL;
+                if(!mirClient.call(mir))
+                {
+                    ROS_ERROR("Service call to mir failed");
+                    return -1;
+                }
 
-            ROS_INFO("Deleted order!");
-        }
+                if(mir.response.result > 0)
+                {
+                    ROS_INFO("MiR is on the way!");
+                }
+                else
+                {
+                    ROS_INFO("MiR is busy");
 
-        //Call MiR:
-        ROS_INFO("Calling MiR!");
-        mir.request.action = MIR_CALL;
-        if(!mirClient.call(mir))
-        {
-            ROS_ERROR("Service call to mir failed");
-            return -1;
-        }
-
-        if(mir.response.result > 0)
-        {
-            ROS_INFO("MiR is on the way!");
-        }
-        else
-        {
-            ROS_INFO("MiR is busy");
-        }
-
-        mir.request.action = MIR_POLL_ARRIVED;
-        if(!mirClient.call(mir))
-        {
-            ROS_ERROR("Service call to mir failed");
-            return -1;
-        }
-
-        while(mir.response.result == 0)
-        {
-            ros::Duration(1).sleep();
-            if(!mirClient.call(mir))
-            {
-                ROS_ERROR("Service call to mir failed");
-                return -1;
+                    while(mir.response.result > 0)
+                    {
+                        ros::Duration(1).sleep();
+                        if(!mirClient.call(mir))
+                        {
+                            ROS_ERROR("Service call to mir failed");
+                            return -1;
+                        }
+                    }
+                }
             }
         }
 
-        ROS_INFO("MiR has arrived!");
-        //Move packed orders onto MiR:
-        ROS_INFO("Placing order on MiR!");
-        loadAndRunUrProgram("rsd_mir_place.urp");
+        stopLock.lock();
+        stopCopy = isStopped;
+        stopLock.unlock();
 
-        //Take empty boxes from MiR:
-        ROS_INFO("Taking empty boxes from MiR");
-        loadAndRunUrProgram("rsd_mir_pickup.urp");
-
-        mir.request.action = MIR_RELEASE;
-        if(!mirClient.call(mir))
+        if(!stopCopy)
         {
-            ROS_ERROR("Service call to mir failed");
-            return -1;
+            if(currentOrderIdx == 4) //All 4 orders have been packed
+            {
+                //Go to "SUSPENDING":
+                std_msgs::Int8 packmlAction;
+                packmlAction.data = AC_SUSPEND;
+                packmlPub.publish(packmlAction);
+
+                //Go to "SUSPENDED":
+                packmlAction.data = AC_SC;
+                packmlPub.publish(packmlAction);
+
+                //Wait for the MiR to arrive:
+                mir.request.action = MIR_POLL_ARRIVED;
+                if(!mirClient.call(mir))
+                {
+                    ROS_ERROR("Service call to mir failed");
+                    return -1;
+                }
+
+                while(mir.response.result == 0)
+                {
+                    ros::Duration(1).sleep();
+                    if(!mirClient.call(mir))
+                    {
+                        ROS_ERROR("Service call to mir failed");
+                        return -1;
+                    }
+                }
+
+                //When MiR has arrived:
+                ROS_INFO("MiR has arrived!");
+
+                //Go to "UNSUSPENDING":
+                packmlAction.data = AC_SUSPEND;
+                packmlPub.publish(packmlAction);
+
+                //Go to "EXECUTE":
+                packmlAction.data = AC_SC;
+                packmlPub.publish(packmlAction);
+
+                //Move packed orders onto MiR:
+                ROS_INFO("Placing order on MiR!");
+                loadAndRunUrProgram("rsd_mir_place.urp");
+
+                //Take empty boxes from MiR:
+                ROS_INFO("Taking empty boxes from MiR");
+                loadAndRunUrProgram("rsd_mir_pickup.urp");
+
+                //Release the MiR:
+                mir.request.action = MIR_RELEASE;
+                if(!mirClient.call(mir))
+                {
+                    ROS_ERROR("Service call to mir failed");
+                    return -1;
+                }
+                ROS_INFO("MiR is released!");
+
+                //OEE:
+                int totalBrickInOrders = 0;
+                for(int i = 0; i < 4; i ++)
+                    totalBrickInOrders += currentOrderContents[i][BLUE_BRICKS] + currentOrderContents[i][RED_BRICKS] + currentOrderContents[i][YELLOW_BRICKS];
+
+                int totalBricksHandled = totalBrickInOrders + bricksDiscarded;
+                
+                std_msgs::String s;
+                s.data = "done" + to_string(currentOrderIdx) + ";" + to_string(totalBrickInOrders) + ";" + to_string(totalBricksHandled);
+                oeePub.publish(s);
+                
+                //Delete all orders:
+                for(int i = 0; i < 4; i++)
+                {
+                    ROS_INFO_STREAM("Deleting order with id " << currentOrderIds[i]);
+                    delOrder.request.id = currentOrderIds[i];
+                    delOrder.request.ticket = currentOrderTickets[i];
+
+                    if(!mesDelClient.call(delOrder))
+                    {
+                        ROS_INFO("Failed to delete order!");
+                        return -1;
+                    }
+
+                }
+
+                ROS_INFO("Deleted all four orders!");
+                bricksDiscarded = 0;
+            }
         }
-        // Send done to oee_calculator. The string should not contain any spaces
-        // the done message looks like this: done,# of orders completed,# of bricks in the 4 orders,# of bricks touched during the 4 orders
-        ROS_INFO("MiR is released!");
-
-
-
     }
 
     return 0;
@@ -440,43 +552,115 @@ void pauseSystem(const std_msgs::Empty::ConstPtr& msg)
 {
     ROS_INFO("Pausing!");
     pauseLock.lock();
+    if(isPaused)
+    {
+        pauseLock.unlock();
+        return;
+    }
     isPaused = true;
     pauseLock.unlock();
+
+    std_msgs::String s;
+    s.data = "downTime_start";
+    oeePub.publish(s);
     ROS_INFO("Paused!");
+
+    //Go to "HOLDING":
+    std_msgs::Int8 packmlAction;
+    packmlAction.data = AC_HOLD;
+    packmlPub.publish(packmlAction);
+
+    //Go to "HELD":
+    packmlAction.data = AC_SC;
+    packmlPub.publish(packmlAction);
 }
 
 void playSystem(const std_msgs::Empty::ConstPtr& msg)
 {
-    ROS_INFO("Play!");
-    pauseLock.lock();
-    if(isPaused)
+    if(!packmlGetClient.call(getPackml))
     {
-        ROS_INFO("Robot was paused!");
-        isPaused = false;
+        ROS_ERROR("Failed to get PackML state via service");
+        return;
     }
-    pauseLock.unlock();
 
-    stopLock.lock();
-    if(isStopped)
+    feederLock.lock();
+    if(feederEstimates[BLUE_BRICKS] <= 0 || feederEstimates[RED_BRICKS] <= 0 || feederEstimates[YELLOW_BRICKS] <= 0)
     {
-        ROS_INFO("Robot was stopped!");
-        isStopped = false;
+        ROS_ERROR("Cannot play when feeders are empty!");
+        feederLock.unlock();
+        return;
     }
-    stopLock.unlock();
+    feederLock.unlock();
+
+    if(getPackml.response.state == ST_IDLE || getPackml.response.state == ST_HELD)
+    {
+        ROS_INFO("Play!");
+        pauseLock.lock();
+        if (isPaused)
+        {
+            ROS_INFO("Robot was paused!");
+            isPaused = false;
+            std_msgs::String s;
+            s.data = "downTime_stop";
+            oeePub.publish(s);
+        }
+        pauseLock.unlock();
+
+        stopLock.lock();
+        if (isStopped)
+        {
+            ROS_INFO("Robot was stopped!");
+            isStopped = false;
+            std_msgs::String s;
+            s.data = "downTime_stop";
+            oeePub.publish(s);
+        }
+        stopLock.unlock();
+
+        //Publish PackML actions:
+        std_msgs::Int8 packmlAction;
+        if(getPackml.response.state == ST_IDLE)
+        {
+            packmlAction.data = AC_START;
+            packmlPub.publish(packmlAction);
+        }
+        else
+        {
+            packmlAction.data = AC_UNHOLD;
+            packmlPub.publish(packmlAction);
+        }
+        
+        packmlAction.data = AC_SC;
+        packmlPub.publish(packmlAction);  
+    }
+    else
+    {
+        ROS_INFO("Cannot press PLAY when not in idle state!");
+    }
+    
 }
 
 void stopSystem(const std_msgs::Empty::ConstPtr& msg)
 {
     stopLock.lock();
+    if(isStopped)
+    {
+         stopLock.unlock();
+         return;
+    }
     isStopped = true;
     stopLock.unlock();
 
+    //Reset orders:
     orderLock.lock();
-    currentOrderContents[BLUE_BRICKS] = 0;
-    currentOrderContents[RED_BRICKS] = 0;
-    currentOrderContents[YELLOW_BRICKS] = 0;
-    currentOrderId = -1;
-    currentOrderTicket = -1;
+    for(int i = 0; i < 4; i++)
+    {
+        currentOrderContents[i][BLUE_BRICKS] = 0;
+        currentOrderContents[i][RED_BRICKS] = 0;
+        currentOrderContents[i][YELLOW_BRICKS] = 0;
+        currentOrderIds[i] = -1;
+        currentOrderTickets[i] = "";
+    }
     orderLock.unlock();
 
     //OEE:
@@ -540,12 +724,17 @@ void pack(int color, int amount, int box)
     bool stopCopy;
     while(currentOrderContents[color] > 0) //Pack all the "color" bricks
     {
+        //TODO::Try max 3 times!
+
         //Pickup a brick:
         if(!loadAndRunUrProgram(urPickProg))
         {
             ROS_ERROR("Robot failed!");
             return;
         }
+
+        //We picked a brick:
+        feederEstimates[color]--;
 
         stopLock.lock();
         stopCopy = isStopped;
@@ -613,7 +802,7 @@ void pack(int color, int amount, int box)
 
             if(visCmd.response.result == BRICK_MATCH)
             {
-                currentOrderContents[color]--; //One less brick to pack :)
+                currentOrderContents[currentOrderIdx][color]--; //One less brick to pack :)
                 //Open the gripper:
                 stopLock.lock();
                 stopCopy = isStopped;
@@ -645,6 +834,7 @@ void pack(int color, int amount, int box)
                     ROS_ERROR("Robot failed!");
                     return;
                 }
+                bricksDiscarded++;
             }
         }
         else
@@ -669,6 +859,18 @@ void pack(int color, int amount, int box)
             {
                 ROS_ERROR("Failed to contact gripper");
             }
+            bricksDiscarded++;
         }
     }
+}
+
+bool getFeederStatus(system_manager::get_feeder_status::Request &req, system_manager::get_feeder_status::Response &res)
+{
+    feederLock.lock();
+    res.blue = feederEstimates[BLUE_BRICKS];
+    res.red = feederEstimates[RED_BRICKS];
+    res.yellow = feederEstimates[YELLOW_BRICKS];
+    feederLock.unlock();
+
+    return true;
 }
