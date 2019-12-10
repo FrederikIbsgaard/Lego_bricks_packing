@@ -15,4 +15,7 @@ cmake ..
 make
 sudo make install
 
+sudo apt install ros-melodic-joint-trajectory-controller
+
+
 ```
