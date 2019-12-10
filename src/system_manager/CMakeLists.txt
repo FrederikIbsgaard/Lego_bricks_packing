@@ -57,10 +57,11 @@ SET(CMAKE_BUILD_TYPE Release)
 # )
 
 ## Generate services in the 'srv' folder
-#add_service_files(
-#  FILES
-#  goto_config.srv
-#)
+add_service_files(
+  FILES
+  get_packml_state.srv
+  get_feeder_status.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -70,10 +71,10 @@ SET(CMAKE_BUILD_TYPE Release)
 # )
 
 ## Generate added messages and services with any dependencies listed here
-#generate_messages(
-#  DEPENDENCIES
-#  std_msgs
-#)
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
