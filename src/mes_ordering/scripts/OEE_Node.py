@@ -26,17 +26,19 @@ class Oee_class:
     def reset_timers():
         x1.downTime_start = time0
         x1.downTime_stop = time0
-        x1.downTime_Sum = [time0]
         x1.runTime_start = time0
         x1.runTime_stop = time0
-        x1.runTime_Sum = [time0]
 
-    runTime_Sum = [time0]
-    downTime_Sum = [time0]
     runTime_start = time0
     runTime_stop = time0
     downTime_start = time0
     downTime_stop = time0
+    downTime = time0
+    runTime = time0
+    GoodCount = 0
+    TotalCount = 0
+    TargetOrders = 0
+    TotalOrders = 0
 
 
 x1 = Oee_class()
@@ -48,20 +50,36 @@ def callback(data):
     msgs = data.data
 
     if msgs == 'runTime_start':
+        if x1.downTime > 0.0:
+            # Stop down time
+            x1.downTime_stop = time.time()
+            # Calculate down time and add to list
+            x1.downTime += (x1.downTime_stop - x1.downTime_start)
         # Start run time
         x1.runTime_start = time.time()
     elif msgs == 'downTime_start':
+        # Stop run time
+        x1.runTime_stop = time.time()
+        # Calculate run time
+        x1.runTime += x1.runTime_stop - x1.runTime_start
         # Start down time
         x1.downTime_start = time.time()
     elif msgs == 'downTime_stop':
         # Stop down time
         x1.downTime_stop = time.time()
         # Calculate down time and add to list
-        x1.downTime_Sum.append(x1.downTime_stop - x1.downTime_start)
+        x1.downTime += (x1.downTime_stop - x1.downTime_start)
+        # Start run time
+        x1.runTime_start = time.time()
+    elif msgs == 'orderTaken':
+        # Update total # of taken orders
+        x1.TargetOrders += 1
     elif 'done' in msgs:
         # Stop run time
         x1.runTime_stop = time.time()
-        runTime = (x1.runTime_stop - x1.runTime_start) - sum(x1.downTime_Sum)
+        # Calculate run time
+        x1.runTime += x1.runTime_stop - x1.runTime_start
+
         # done,# of orders completed,
         # total # of brick in orders,
         # total # of bricks touched
@@ -71,12 +89,20 @@ def callback(data):
         print int(msgData[1]), int(msgData[2]), int(msgData[3])
 
         # Calculate the availablity
-        Availability = calc_Availability(
-            runTime, sum(x1.downTime_Sum))
+        Availability = calc_Availability(x1.runTime, x1.downTime)
+
+        # Update the total # of orders completed
+        x1.TotalOrders += int(msgData[1])
         # Calculate the performance
-        Performance = calc_Performance(float(msgData[1]))
+        Performance = calc_Performance(
+            float(x1.TotalOrders), float(x1.TargetOrders))
+
+        # Update total # of packed bricks
+        x1.GoodCount += int(msgData[2])
+        # Update total # of touched bricks
+        x1.TotalCount += int(msgData[3])
         # Calculate the quality
-        Quality = calc_Quality(float(msgData[2]), float(msgData[3]))
+        Quality = calc_Quality(float(x1.GoodCount), float(x1.TotalCount))
 
         # Calculate the OEE
         OEE = Availability * Performance * Quality
@@ -89,9 +115,7 @@ def callback(data):
         pub_log.publish("INFO", "OEE_Calc", "Avail: " + str(Availability) +
                         " Perf: " + str(Performance) +
                         " Qual: " + str(Quality) + " OEE: " + str(OEE))
-        x1.reset_timers
-    elif msgs == 'STOP':
-        x1.reset_timers
+        x1.downTime_start
 
 
 def calc_Availability(RunTime, DownTime):
@@ -100,9 +124,8 @@ def calc_Availability(RunTime, DownTime):
     return RunTime / TotalTime
 
 
-def calc_Performance(TotalCount):
+def calc_Performance(TotalCount, TargetCount):
     # Completed order/Taken orders
-    TargetCount = 4
     return TotalCount / TargetCount
 
 
