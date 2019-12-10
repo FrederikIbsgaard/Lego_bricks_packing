@@ -90,6 +90,8 @@ def callback(data):
                         " Perf: " + str(Performance) +
                         " Qual: " + str(Quality) + " OEE: " + str(OEE))
         x1.reset_timers
+    elif msgs == 'STOP':
+        x1.reset_timers
 
 
 def calc_Availability(RunTime, DownTime):
