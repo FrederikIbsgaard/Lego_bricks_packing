@@ -57,6 +57,9 @@ bool running = true;
 bool isPaused = false;
 bool isStopped = true;
 
+//OEE:
+ros::Publisher oeePub;
+
 //Callbacks:
 void feederRefill(const std_msgs::Empty::ConstPtr& msg);
 void pauseSystem(const std_msgs::Empty::ConstPtr& msg);
@@ -159,6 +162,9 @@ int main(int argc, char** argv)
     ros::Subscriber pauseSub = n.subscribe<std_msgs::Empty>("/gui_pause", 1, pauseSystem);
     ros::Subscriber playSub = n.subscribe<std_msgs::Empty>("/gui_play", 1, playSystem);
     ros::Subscriber postSub = n.subscribe<std_msgs::Empty>("/gui_stop", 1, stopSystem);
+
+    //OEE:
+    oeePub = n.advertise<std_msgs::String>("/oee_calculator", 10);
 
     //Start packing:
     //Open the gripper:
@@ -471,6 +477,11 @@ void stopSystem(const std_msgs::Empty::ConstPtr& msg)
     currentOrderId = -1;
     currentOrderTicket = -1;
     orderLock.unlock();
+
+    //OEE:
+    std_msgs::String s;
+    s.data = "STOP";
+    oeePub.publish(s);
 }
 
 /**
