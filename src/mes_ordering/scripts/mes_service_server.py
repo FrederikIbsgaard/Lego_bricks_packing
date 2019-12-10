@@ -4,6 +4,7 @@ from mes_ordering.srv import GetOrder_srv, GetOrder_srvResponse, DeleteOrder_srv
 from ordering_client import get_orders, choose_order, reserve_order, get_order_info, delete_order
 from mes_ordering.msg import orderInfoMsg
 from local_log.msg import system_log_msg
+from system_manager.srv import get_feeder_status
 import rospy
 
 # Publisher of an orders info i,e. id and amount of each brick
@@ -33,6 +34,17 @@ def ordering(req):
             print("Chosen id:", id)
 
             if id is not None:
+                # Finds the order info of the chosen id/order
+                for i in range(len(orders_data)):
+                    if orders_data[i]['id'] == id:
+                        get_order_info(id, orders_data[i])
+                        orderInfo = orders_data[i]
+                        break
+                if completable(orderInfo):
+                    pub_log.publish("INFO", "MES_Ordering",
+                                    "Not enough bricks in feeder to finsih order")
+                    # If something goes wrong return 0/none
+                    return GetOrder_srvResponse(0, "None", 0, 0, 0)
                 # Reserve order by id, returns orders ticket
                 # returns none if order can't be reserved
                 ticket = reserve_order(id)
@@ -67,6 +79,28 @@ def deleting(req):
     pub_log.publish("INFO", "MES_Ordering",
                     "Order deletion: " + str(del_info[1]))
     return DeleteOrder_srvResponse(del_info[0], str(del_info[1]))
+
+
+def completable(orderInfo):
+    bricks = getFeederStatus()
+    if (bricks.blue < orderInfo['blue']):
+        return False
+    if (bricks.red < orderInfo['red']):
+        return False
+    if (bricks.yellow < orderInfo['yellow']):
+        return False
+    return True
+
+
+def getFeederStatus():
+    rospy.wait_for_service('get_feeder_status')
+    try:
+        feederStatus = rospy.ServiceProxy(
+            'get_feeder_status', get_feeder_status)
+        resp1 = feederStatus()
+        return resp1
+    except rospy.ServiceException, e:
+        print "Service call failed: %s" % e
 
 
 def start_service():
