@@ -48,29 +48,40 @@ def callback(data):
     msgs = data.data
 
     if msgs == 'runTime_start':
+        # Start run time
         x1.runTime_start = time.time()
-    elif msgs == 'runTime_stop':
-        x1.runTime_stop = time.time()
-        x1.runTime_Sum.append(x1.runTime_stop - x1.runTime_start)
     elif msgs == 'downTime_start':
+        # Start down time
         x1.downTime_start = time.time()
     elif msgs == 'downTime_stop':
+        # Stop down time
         x1.downTime_stop = time.time()
+        # Calculate down time and add to list
         x1.downTime_Sum.append(x1.downTime_stop - x1.downTime_start)
     elif 'done' in msgs:
+        # Stop run time
+        x1.runTime_stop = time.time()
+        runTime = (x1.runTime_stop - x1.runTime_start) - sum(x1.downTime_Sum)
         # done,# of orders completed,
         # total # of brick in orders,
         # total # of bricks touched
         msgData = str(msgs).split(",")
+
         print msgData[1], msgData[2], msgData[3]
         print int(msgData[1]), int(msgData[2]), int(msgData[3])
+
+        # Calculate the availablity
         Availability = calc_Availability(
-            sum(x1.runTime_Sum), sum(x1.downTime_Sum))
+            runTime, sum(x1.downTime_Sum))
+        # Calculate the performance
         Performance = calc_Performance(float(msgData[1]))
+        # Calculate the quality
         Quality = calc_Quality(float(msgData[2]), float(msgData[3]))
-        print Quality
+
+        # Calculate the OEE
         OEE = Availability * Performance * Quality
 
+        # Publish information
         pub_avail.publish(Availability)
         pub_perf.publish(Performance)
         pub_qual.publish(Quality)
