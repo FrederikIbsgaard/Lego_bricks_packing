@@ -4,7 +4,6 @@ from mes_ordering.srv import GetOrder_srv, GetOrder_srvResponse, DeleteOrder_srv
 from ordering_client import get_orders, choose_order, reserve_order, get_order_info, delete_order
 from mes_ordering.msg import orderInfoMsg
 from local_log.msg import system_log_msg
-from system_manager.srv import get_feeder_status
 import rospy
 
 # Publisher of an orders info i,e. id and amount of each brick
@@ -13,7 +12,7 @@ pub_log = rospy.Publisher('system_log', system_log_msg, queue_size=10)
 
 
 def ordering(req):
-    print("req: ", req.amount)
+    print("req: blue:", req.blue, " red:", req.red, " yellow:", req.yellow)
     while True:
         # Get all orders
         ids_data = get_orders()
@@ -40,7 +39,8 @@ def ordering(req):
                         get_order_info(id, orders_data[i])
                         orderInfo = orders_data[i]
                         break
-                if not(completable(orderInfo)):
+                if not(completable(orderInfo, req)):
+                    print("Not enough bricks in feeder to finsih order")
                     pub_log.publish("INFO", "MES_Ordering",
                                     "Not enough bricks in feeder to finsih order")
                     # If something goes wrong return 0/none
@@ -81,8 +81,7 @@ def deleting(req):
     return DeleteOrder_srvResponse(del_info[0], str(del_info[1]))
 
 
-def completable(orderInfo):
-    bricks = getFeederStatus()
+def completable(orderInfo, bricks):
     if (bricks.blue < orderInfo['blue']):
         return False
     if (bricks.red < orderInfo['red']):
@@ -90,17 +89,6 @@ def completable(orderInfo):
     if (bricks.yellow < orderInfo['yellow']):
         return False
     return True
-
-
-def getFeederStatus():
-    rospy.wait_for_service('get_feeder_status')
-    try:
-        feederStatus = rospy.ServiceProxy(
-            'get_feeder_status', get_feeder_status)
-        resp1 = feederStatus()
-        return resp1
-    except rospy.ServiceException, e:
-        print "Service call failed: %s" % e
 
 
 def start_service():

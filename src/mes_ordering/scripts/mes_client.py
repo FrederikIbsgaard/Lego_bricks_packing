@@ -9,7 +9,7 @@ def get_order():
     rospy.wait_for_service('MES_GetOrder')
     try:
         getOrder = rospy.ServiceProxy('MES_GetOrder', GetOrder_srv)
-        resp1 = getOrder(1)
+        resp1 = getOrder(10, 10, 10)
         return resp1
     except rospy.ServiceException, e:
         print "Service call failed: %s" % e
