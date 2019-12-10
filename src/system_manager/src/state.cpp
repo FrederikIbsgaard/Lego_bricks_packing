@@ -2,16 +2,19 @@
 #include "std_msgs/String.h"
 #include "std_msgs/Int8.h"
 
+#include "system_manager/get_packml_state.h"
+
 #include <sstream>
 #include "state.h"
 /**
  * This tutorial demonstrates simple sending of messages over the ROS system.
  */
 
-
 int currentState = ST_ABORTING;
 
 int state(int currentState, int action);
+
+bool stateCallBack(system_manager::get_packml_state::Request &req, system_manager::get_packml_state::Response &res);
 
 void actionCallback(const std_msgs::Int8::ConstPtr& msg)
 {
@@ -25,6 +28,8 @@ int main(int argc, char **argv)
   ros::NodeHandle n;
   ros::Publisher state_pub = n.advertise<std_msgs::Int8>("/packml_state", 10);
   ros::Subscriber action_sub = n.subscribe("/action_state", 10, actionCallback);
+
+  ros::ServiceServer getStateService = n.advertiseService("/get_packml_state", stateCallBack);
 
   ros::Rate loop_rate(10);
   int count = 0;
@@ -171,4 +176,12 @@ int state(int currentState, int action)
     return currentState;
   }
   return 0;
+}
+
+
+bool stateCallBack(system_manager::get_packml_state::Request &req, system_manager::get_packml_state::Response &res)
+{
+  
+  res.state = currentState;
+  return true;
 }
