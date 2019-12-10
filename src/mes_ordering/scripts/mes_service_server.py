@@ -40,7 +40,7 @@ def ordering(req):
                         get_order_info(id, orders_data[i])
                         orderInfo = orders_data[i]
                         break
-                if completable(orderInfo):
+                if not(completable(orderInfo)):
                     pub_log.publish("INFO", "MES_Ordering",
                                     "Not enough bricks in feeder to finsih order")
                     # If something goes wrong return 0/none
