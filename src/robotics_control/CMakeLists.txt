@@ -118,7 +118,7 @@ catkin_package(
 #  LIBRARIES er_smart_cam
 #  CATKIN_DEPENDS roscpp std_msgs
 #  DEPENDS system_lib
-   CATKIN_DEPENDS message_runtime
+   CATKIN_DEPENDS message_runtime ur_msgs
 )
 
 ###########

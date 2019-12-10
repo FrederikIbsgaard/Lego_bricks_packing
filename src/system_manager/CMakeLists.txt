@@ -13,6 +13,12 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   #robot_control
   vision
+  ur_msgs
+  ur_dashboard_msgs
+  local_log
+  mes_ordering
+  mir_api
+
 )
 
 SET(CMAKE_BUILD_TYPE Release)
@@ -110,7 +116,7 @@ catkin_package(
 #  LIBRARIES er_smart_cam
 #  CATKIN_DEPENDS roscpp std_msgs
 #  DEPENDS system_lib
-#   CATKIN_DEPENDS message_runtime
+   CATKIN_DEPENDS message_runtime ur_msgs ur_dashboard_msgs mir_api
 )
 
 ###########
@@ -149,8 +155,8 @@ add_executable(${PROJECT_NAME}_packml src/state.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
+add_dependencies(${PROJECT_NAME}_node system_manager_generate_messages_cpp)
+add_dependencies(${PROJECT_NAME}_packml system_manager_generate_messages_cpp)
 ## Specify libraries to link a library or executable target against
 ## ROBOTICS executables:
 target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES})
