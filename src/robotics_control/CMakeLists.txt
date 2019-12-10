@@ -157,7 +157,7 @@ include_directories(
 # add_executable(packing_demo src/packing_demo.cpp)
 # add_executable(waypoint_test src/waypoint_test.cpp)
 # add_executable(e_stop_test src/e_stop_test.cpp)
-# add_executable(robot_state_monitor src/robot_state_monitor.cpp)
+add_executable(robot_state_monitor src/robot_state_monitor.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -187,7 +187,7 @@ include_directories(
 
 # target_link_libraries(e_stop_test ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
-# target_link_libraries(robot_state_monitor ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(robot_state_monitor ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 #############
 ## Install ##
 #############
