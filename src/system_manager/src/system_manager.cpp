@@ -371,7 +371,8 @@ int main(int argc, char** argv)
             ROS_ERROR("Service call to mir failed");
             return -1;
         }
-
+        // Send done to oee_calculator. The string should not contain any spaces
+        // the done message looks like this: done,# of orders completed,# of bricks in the 4 orders,# of bricks touched during the 4 orders
         ROS_INFO("MiR is released!");
 
 
