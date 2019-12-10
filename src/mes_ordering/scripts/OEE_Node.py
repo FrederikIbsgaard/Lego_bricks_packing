@@ -39,6 +39,7 @@ class Oee_class:
     TotalCount = 0
     TargetOrders = 0
     TotalOrders = 0
+    downTime_flag = 0
 
 
 x1 = Oee_class()
@@ -50,21 +51,23 @@ def callback(data):
     msgs = data.data
 
     if msgs == 'runTime_start':
-        if x1.downTime > 0.0:
+        if x1.downTime_flag is not 0:
             # Stop down time
             x1.downTime_stop = time.time()
             # Calculate down time and add to list
             x1.downTime += (x1.downTime_stop - x1.downTime_start)
         # Start run time
         x1.runTime_start = time.time()
-    elif msgs == 'downTime_start':
+    elif (msgs == 'downTime_start') and (x1.downTime_flag is not 1):
+        x1.downTime_flag = 1
         # Stop run time
         x1.runTime_stop = time.time()
         # Calculate run time
         x1.runTime += x1.runTime_stop - x1.runTime_start
         # Start down time
         x1.downTime_start = time.time()
-    elif msgs == 'downTime_stop':
+    elif (msgs == 'downTime_stop') and (x1.downTime_flag is not 0):
+        x1.downTime_flag = 0
         # Stop down time
         x1.downTime_stop = time.time()
         # Calculate down time and add to list
@@ -115,6 +118,7 @@ def callback(data):
         pub_log.publish("INFO", "OEE_Calc", "Avail: " + str(Availability) +
                         " Perf: " + str(Performance) +
                         " Qual: " + str(Quality) + " OEE: " + str(OEE))
+        x1.downTime_flag = 1
         x1.downTime_start
 
 
