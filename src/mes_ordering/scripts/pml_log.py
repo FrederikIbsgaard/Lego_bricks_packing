@@ -1,15 +1,38 @@
 #!/usr/bin/env python
 import rospy
 from std_msgs.msg import String
+from std_msgs.msg import Int8
 from ordering_client import post_pml
+from local_log.msg import system_log_msg
+
+pub = rospy.Publisher('system_log', system_log_msg, queue_size=10)
 
 
 def callback(data):
-    rospy.loginfo(rospy.get_caller_id() + "I heard %s", data.data)
+    rospy.loginfo(data.data)
 
-    msgs = data.data
+    state = data.data
 
-    post_pml(msgs)
+    if state == 31:
+        msgs = "Idle"
+    elif state == 33:
+        msgs = "Execute"
+    elif state == 35:
+        msgs = "Complete"
+    elif state == 41:
+        msgs = "Held"
+    elif state == 51:
+        msgs = "Suspended"
+    elif state == 11:
+        msgs = "Aborted"
+    elif state == 21:
+        msgs = "Stopped"
+    else:
+        msgs = None
+
+    if msgs is not None:
+        pub.publish("INFO", "pml_logging", msgs)
+        post_pml(msgs)
 
 
 def listener():
@@ -21,7 +44,9 @@ def listener():
     # run simultaneously.
     rospy.init_node('pml_logging', anonymous=True)
 
-    rospy.Subscriber("packml_state", String, callback)
+    rospy.Subscriber("packml_state", Int8, callback)
+
+    print("MES PackML Ready")
 
     # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()

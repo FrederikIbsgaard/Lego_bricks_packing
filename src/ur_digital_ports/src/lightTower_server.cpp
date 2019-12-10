@@ -4,7 +4,9 @@
 #include <rtde_io_interface.h>
 #include "ros/ros.h"
 #include "std_msgs/String.h"
+#include "std_msgs/Int8.h"
 #include "ur_digital_ports/digitalOut_srv.h"
+#include "state.h"
 
 #define RED_PORT 0
 #define AMBER_PORT 1
@@ -14,39 +16,40 @@
 unsigned int redAction = 0, amberAction = 0, greenAction = 0;
 ur_rtde::RTDEIOInterface rtde_io("192.168.0.12");
 // Reset everything at start
-void pmlState(const std_msgs::String::ConstPtr& msg){
-	std::string msgs = msg->data.c_str();
+//void pmlState(const std_msgs::String::ConstPtr& msg){
+void pmlState(const std_msgs::Int8::ConstPtr& msg){
+	int msgs = msg->data;
 
 	redAction = 0;
 	amberAction = 0;
 	greenAction = 0;
 
-	if((msgs == "Aborting") or (msgs == "Aborted") or (msgs == "Clearing")){
+	if((msgs == ST_ABORTING) or (msgs == ST_ABORTED) or (msgs == ST_CLEARING)){
 		//Red light flashing
 		redAction = 2;
 	}
-	else if((msgs == "Stopping") or (msgs == "Stopped")){
+	else if((msgs == ST_STOPPING) or (msgs == ST_STOPPED)){
 		//Red light on
 		redAction = 1;
 	}
-	else if(msgs == "Resetting"){
+	else if(msgs == ST_RESETTING){
 		//Amber light flashing
 		amberAction = 2;
 	}
-	else if(msgs == "Idle"){
+	else if(msgs == ST_IDLE){
 		//Green light flashing
 		greenAction = 2;
 	}
-	else if((msgs == "Starting") or (msgs == "Executing") or (msgs == "Unholding") or (msgs == "Unsuspending")){
+	else if((msgs == ST_STARTING) or (msgs == ST_EXECUTE) or (msgs == ST_UNHOLDING) or (msgs == ST_UNSUPENDING)){
 		//Green light on
 		greenAction = 1;
 	}
-	else if((msgs == "Holding") or (msgs == "Held")){
+	else if((msgs == ST_HOLDING) or (msgs == ST_HELD)){
 		//Amber & Green lights flashing
 		amberAction = 2;
 		greenAction = 2;
 	}
-	else if((msgs == "Suspending") or (msgs == "Suspended")){
+	else if((msgs == ST_SUSPENDING) or (msgs == ST_SUSPENDED)){
 		//Amber light on
 		amberAction = 1;
 	}
@@ -55,7 +58,7 @@ void pmlState(const std_msgs::String::ConstPtr& msg){
 		amberAction = 0;
 		greenAction = 0;
 	}
-	ROS_INFO("New PackML state: %s", msgs.c_str());
+	ROS_INFO("New PackML state: %d", msgs);
 }
 
 void lightOn(int port, int state){
