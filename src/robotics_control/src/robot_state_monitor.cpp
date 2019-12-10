@@ -9,6 +9,8 @@ ros::Publisher packmlPub;
 
 bool hasJustBeenSafeguardStopped = false;
 
+bool hasJustBeenEstopped = false;
+
 void safetymodeChanged(const ur_dashboard_msgs::SafetyMode::ConstPtr& msg);
 void robotModeChanged(const ur_dashboard_msgs::RobotMode::ConstPtr& msg);
 
@@ -47,19 +49,37 @@ void safetymodeChanged(const ur_dashboard_msgs::SafetyMode::ConstPtr& msg)
             oeePub.publish(s);
             hasJustBeenSafeguardStopped = false;
         }
+        
+        if(hasJustBeenEstopped)
+        {
+            std_msgs::Int8 packmlAction;
+            packmlAction.data = 11; //AC_CLEAR
+            packmlPub.publish(packmlAction);
+
+            packmlAction.data = 0; //AC_SC
+            packmlPub.publish(packmlAction);
+        }
     }
     else if(msg->mode == 7u || msg->mode == 6u) //E-stop (robot/system)
     {
         ROS_INFO("EMERGENCY STOP");
+        hasJustBeenEstopped = true;
         std_msgs::String s;
         s.data = "STOP";
         oeePub.publish(s);
+
+        std_msgs::Int8 packmlAction;
+        packmlAction.data = 10; //AC_ABORT
+        packmlPub.publish(packmlAction);
+
+        packmlAction.data = 0; //AC_SC
+        packmlPub.publish(packmlAction);
     }
 }
 
 void robotModeChanged(const ur_dashboard_msgs::RobotMode::ConstPtr& msg)
 {
-    if(msg->mode = msg->RUNNING)
+    if(msg->mode == msg->RUNNING)
     {
         std_msgs::Int8 i;
         i.data = 0;
