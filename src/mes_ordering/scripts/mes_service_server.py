@@ -54,19 +54,19 @@ def ordering(req):
                                     "id: " + str(id) +
                                     " ticket: " + str(ticket))
                     # Finds the order info of the chosen id/order
-                    for i in range(len(orders_data)):
-                        if orders_data[i]['id'] == id:
-                            get_order_info(id, orders_data[i])
-                            orderInfo = orders_data[i]
-                            break
-                # Publishes the order id and info
-                pub.publish(id, orderInfo['blue'],
-                            orderInfo['red'], orderInfo['yellow'])
-                # Response to the service call
-                return GetOrder_srvResponse(id, ticket,
-                                            orderInfo['blue'],
-                                            orderInfo['red'],
-                                            orderInfo['yellow'])
+                    # for i in range(len(orders_data)):
+                    #    if orders_data[i]['id'] == id:
+                    #        get_order_info(id, orders_data[i])
+                    #        orderInfo = orders_data[i]
+                    #        break
+                    # Publishes the order id and info
+                    pub.publish(
+                        id, orderInfo['blue'], orderInfo['red'], orderInfo['yellow'])
+                    # Response to the service call
+                    return GetOrder_srvResponse(id, ticket,
+                                                orderInfo['blue'],
+                                                orderInfo['red'],
+                                                orderInfo['yellow'])
     pub_log.publish("INFO", "MES_Ordering", "No available orders")
     # If something goes wrong return 0/none
     return GetOrder_srvResponse(0, "None", 0, 0, 0)
