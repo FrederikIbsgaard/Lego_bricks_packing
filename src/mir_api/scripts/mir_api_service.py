@@ -93,9 +93,10 @@ def handle_GotoGr8(req):
         robot.write_register(8, 1)  # MIR can go
         return mir_api_actionResponse(3)
     elif req.action == 10:
-        if robot.is_mission_executing(guid):
-            #rospy.loginfo("true")
-            return mir_api_actionResponse(10)
+        if robot.read_register(8) > 0:
+            if robot.is_mission_executing(guid):
+                #rospy.loginfo("true")
+                return mir_api_actionResponse(10)
             #rospy.loginfo("nor")
     elif req.action == 20:
         return mir_api_actionResponse(robot.read_register(80))

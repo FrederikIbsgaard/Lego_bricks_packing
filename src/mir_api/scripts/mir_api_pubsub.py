@@ -101,10 +101,11 @@ class mir_pubsub():
             self.robot.write_register(8, 1)  # MIR can go
             self.pub.publish(3)
         elif data.data == 10:
-            if self.robot.is_mission_executing(self.guid):
-                self.pub.publish(10)
-            else:
-                self.pub.publish(0)
+            if self.robot.read_register(8) > 0:
+                if self.robot.is_mission_executing(self.guid):
+                    self.pub.publish(10)
+                else:
+                    self.pub.publish(0)
         elif data.data == 20:
             self.pub.publish(self.robot.read_register(80))
         else:
