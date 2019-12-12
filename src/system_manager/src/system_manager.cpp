@@ -23,6 +23,7 @@
 #include "mir_api/mir_api_action.h"
 #include "system_manager/get_packml_state.h"
 #include "system_manager/get_feeder_status.h"
+#include "ur_digital_ports/digitalOut_srv.h"
 
 using namespace std;
 
@@ -85,7 +86,7 @@ ros::ServiceClient robotGetProgState;
 ur_dashboard_msgs::GetProgramState robotGetProgStateSrv;
 
 ros::ServiceClient urIoClient;
-ur_msgs::SetIO gripper;
+ur_digital_ports::digitalOut_srv gripper;
 
 //Vision:
 ros::ServiceClient visClient;
@@ -164,11 +165,10 @@ int main(int argc, char** argv)
 
     //Gripper interface:
     //IO message for opening/closing gripper:
-    gripper.request.fun = 1;
-    gripper.request.pin = 4;
+    gripper.request.port = 4;
     gripper.request.state = 1.0;
 
-    urIoClient = n.serviceClient<ur_msgs::SetIO>("/ur_hardware_interface/set_io");
+    urIoClient = n.serviceClient<ur_digital_ports::digitalOut_srv>("/digital_output");
 
     //MiR interface:
     ros::ServiceClient mirClient = n.serviceClient<mir_api::mir_api_action>("/mir_api/service");
@@ -192,7 +192,7 @@ int main(int argc, char** argv)
 
     //Open the gripper:
     ROS_INFO("Opening the gripper");
-    gripper.request.state = 0.0;
+    gripper.request.state = 0;
     if(!urIoClient.call(gripper))
     {
         ROS_ERROR("Failed to contact gripper");
@@ -292,9 +292,9 @@ int main(int argc, char** argv)
 
             ROS_INFO_STREAM("Got order no. " << currentOrderIds[currentOrderIdx]);
             ROS_INFO_STREAM("Ticket: " << currentOrderTickets[currentOrderIdx]);
-            ROS_INFO_STREAM("Blue: " << currentOrderContents[BLUE_BRICKS]);
-            ROS_INFO_STREAM("Red: " << currentOrderContents[RED_BRICKS]);
-            ROS_INFO_STREAM("Yellow: " << currentOrderContents[YELLOW_BRICKS]);
+            ROS_INFO_STREAM("Blue: " << currentOrderContents[currentOrderIdx][BLUE_BRICKS]);
+            ROS_INFO_STREAM("Red: " << currentOrderContents[currentOrderIdx][RED_BRICKS]);
+            ROS_INFO_STREAM("Yellow: " << currentOrderContents[currentOrderIdx][YELLOW_BRICKS]);
 
             ROS_INFO_STREAM("Using box no: " << currentBox);
 
@@ -446,6 +446,21 @@ int main(int argc, char** argv)
                 ROS_INFO("Placing order on MiR!");
                 loadAndRunUrProgram("rsd_mir_place.urp");
 
+                //Delete all orders:
+                for(int i = 0; i < 4; i++)
+                {
+                    ROS_INFO_STREAM("Deleting order with id " << currentOrderIds[i]);
+                    delOrder.request.id = currentOrderIds[i];
+                    delOrder.request.ticket = currentOrderTickets[i];
+
+                    if(!mesDelClient.call(delOrder))
+                    {
+                        ROS_INFO("Failed to delete order!");
+                        return -1;
+                    }
+
+                }
+
                 //Take empty boxes from MiR:
                 ROS_INFO("Taking empty boxes from MiR");
                 loadAndRunUrProgram("rsd_mir_pickup.urp");
@@ -470,20 +485,6 @@ int main(int argc, char** argv)
                 s.data = "done" + to_string(currentOrderIdx) + ";" + to_string(totalBrickInOrders) + ";" + to_string(totalBricksHandled);
                 oeePub.publish(s);
                 
-                //Delete all orders:
-                for(int i = 0; i < 4; i++)
-                {
-                    ROS_INFO_STREAM("Deleting order with id " << currentOrderIds[i]);
-                    delOrder.request.id = currentOrderIds[i];
-                    delOrder.request.ticket = currentOrderTickets[i];
-
-                    if(!mesDelClient.call(delOrder))
-                    {
-                        ROS_INFO("Failed to delete order!");
-                        return -1;
-                    }
-
-                }
 
                 ROS_INFO("Deleted all four orders!");
                 bricksDiscarded = 0;
@@ -529,7 +530,7 @@ bool loadAndRunUrProgram(string filename)
     if(!robotPlay.call(robotPlaySrv))
     {
         ROS_ERROR_STREAM("Failed to execute UR program " << robotLoadSrv.request.filename);
-        return false;
+        throw("Failed to execute UR program!");
     }
 
     ros::Duration(1.0).sleep();
@@ -677,7 +678,11 @@ void getOrderFromMes(int &orderId, int &b, int &r, int &y, string &ticket)
 {
     orderLock.lock();
     //Call service:
-    getOrder.request.amount = 1;
+    feederLock.lock();
+    getOrder.request.blue = feederEstimates[BLUE_BRICKS];
+    getOrder.request.red = feederEstimates[RED_BRICKS];
+    getOrder.request.yellow = feederEstimates[YELLOW_BRICKS];
+    feederLock.unlock();
 
     if(!mesGetClient.call(getOrder))
     {
@@ -722,7 +727,7 @@ void pack(int color, int amount, int box)
     }
 
     bool stopCopy;
-    while(currentOrderContents[color] > 0) //Pack all the "color" bricks
+    while(currentOrderContents[currentOrderIdx][color] > 0) //Pack all the "color" bricks
     {
         //TODO::Try max 3 times!
 

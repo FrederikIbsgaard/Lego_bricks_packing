@@ -4,8 +4,8 @@
     <!-- ROS Stuff-->
     <meta charset="utf-8" />
 
-    <script type="text/javascript" src="http://static.robotwebtools.org/EventEmitter2/current/eventemitter2.min.js"></script>
-    <script type="text/javascript" src="http://static.robotwebtools.org/roslibjs/current/roslib.min.js"></script>
+    <script type="text/javascript" src="eventemitter2.min.js"></script>
+    <script type="text/javascript" src="roslib.min.js"></script>
 
     <script type="text/javascript" type="text/javascript">
         // Connecting to ROS
@@ -79,15 +79,22 @@
         var resetPub = new ROSLIB.Topic(
             {
             ros : ros,
-            name : '/gui_reset',
-            messageType : 'std_msgs/Empty'
+            name : '/action_state',
+            messageType : 'std_msgs/Int8'
             });
 
-        var resetMsg = new ROSLIB.Message();
+        var resetMsg = new ROSLIB.Message({
+            data : 21 //AC_RESET
+        });
+
+        var resetMsgSC = new ROSLIB.Message({
+            data : 0 //AC_RESET
+        });
 
         function resetBtnPres()
         {
             resetPub.publish(resetMsg);
+            resetPub.publish(resetMsgSC);
             return true;
         }
 

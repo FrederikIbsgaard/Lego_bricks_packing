@@ -10,7 +10,7 @@
  * This tutorial demonstrates simple sending of messages over the ROS system.
  */
 
-int currentState = ST_ABORTING;
+int currentState = ST_STOPPED;
 
 int state(int currentState, int action);
 
