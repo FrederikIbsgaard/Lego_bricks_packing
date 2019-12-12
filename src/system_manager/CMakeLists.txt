@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.10.2)
 project(system_manager)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
@@ -11,8 +11,14 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   message_generation
-  robot_control
+  #robot_control
   vision
+  ur_msgs
+  ur_dashboard_msgs
+  local_log
+  mes_ordering
+  mir_api
+
 )
 
 SET(CMAKE_BUILD_TYPE Release)
@@ -57,10 +63,11 @@ SET(CMAKE_BUILD_TYPE Release)
 # )
 
 ## Generate services in the 'srv' folder
-#add_service_files(
-#  FILES
-#  goto_config.srv
-#)
+add_service_files(
+  FILES
+  get_packml_state.srv
+  get_feeder_status.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -70,10 +77,10 @@ SET(CMAKE_BUILD_TYPE Release)
 # )
 
 ## Generate added messages and services with any dependencies listed here
-#generate_messages(
-#  DEPENDENCIES
-#  std_msgs
-#)
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -109,7 +116,7 @@ catkin_package(
 #  LIBRARIES er_smart_cam
 #  CATKIN_DEPENDS roscpp std_msgs
 #  DEPENDS system_lib
-#   CATKIN_DEPENDS message_runtime
+   CATKIN_DEPENDS message_runtime ur_msgs ur_dashboard_msgs mir_api
 )
 
 ###########
@@ -148,8 +155,8 @@ add_executable(${PROJECT_NAME}_packml src/state.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
+add_dependencies(${PROJECT_NAME}_node system_manager_generate_messages_cpp)
+add_dependencies(${PROJECT_NAME}_packml system_manager_generate_messages_cpp)
 ## Specify libraries to link a library or executable target against
 ## ROBOTICS executables:
 target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES})

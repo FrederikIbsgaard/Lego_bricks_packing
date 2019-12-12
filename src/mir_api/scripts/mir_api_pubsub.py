@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
 from mir_api.srv import mir_api_action, mir_api_actionResponse
+from std_msgs.msg import Int8
 import requests
 import time
 import rospy
-import numpy as np
+
 
 language = {'Accept-Language': "en_US"}
 
@@ -14,6 +15,7 @@ class RestMiR():
         self.authorization = {
             'Authorization': "Basic ZGlzdHJpYnV0b3I6NjJmMmYwZjFlZmYxMGQzMTUyYzk1ZjZmMDU5NjU3NmU0ODJiYjhlNDQ4MDY0MzNmNGNmOTI5NzkyODM0YjAxNA=="}
         self.HOST = 'http://10.10.19.40/api/v2.0.0/'
+        #rospy.init_node('mir_api_node', anonymous=True)
     #We need to put the name of our mission
     def get_mission(self, mission_name="MISSION_NAME"):
         response = requests.get(self.HOST + 'missions', headers=self.authorization)
@@ -54,7 +56,6 @@ class RestMiR():
                 if r.json()[i]['state'] == 'Executing':
                     return True
         return False
-
     #In the mission we will have to set coils (plc registers) in order to get information if robot has docked and etc.
     def read_register(self, register_id):
         response = requests.get(self.HOST + 'registers/' + str(register_id), headers=self.authorization)
@@ -75,44 +76,59 @@ class RestMiR():
         if response.status_code != 200:
             print(response.status_code)
         return 0
+#---------------------------------------------------------------------------------------
 
+class mir_pubsub():
+    def __init__(self):
+        self.robot = RestMiR()
+        rospy.init_node('mir_api_pubSub', anonymous=True)
+        self.pub = rospy.Publisher('mir_api/pub', Int8, queue_size=10)
+        rospy.Subscriber('mir_api/sub', Int8, self.callback_call_mir)
+        self.guid = self.robot.get_mission("GoToGr8")
 
+    def callback_call_mir(self, data):
+        if data.data == 1:
+            if self.robot.add_mission_to_queue(self.guid):
+                self.pub.publish(1)
+            else:
+                self.pub.publish(0)
+        elif data.data == 2:
+            if self.robot.read_register(8) == 2:
+                self.pub.publish(2)
+            else:
+                self.pub.publish(0)
+        elif data.data == 3:
+            self.robot.write_register(8, 1)  # MIR can go
+            self.pub.publish(3)
+        elif data.data == 10:
+            if self.robot.is_mission_executing(self.guid):
+                self.pub.publish(10)
+            else:
+                self.pub.publish(0)
+        elif data.data == 20:
+            self.pub.publish(self.robot.read_register(80))
+        else:
+            self.pub.publish(0)
+        return 1
 
-robot = RestMiR()
-guid = robot.get_mission("GoToGr8")
+    def is_executing(self):
+        if self.robot.is_mission_executing(self.guid):
+            self.pub.publish(10)
 
-def handle_GotoGr8(req):
-    if req.action == 1:
-        #guid = robot.get_mission("GoToGr8")
-        if robot.add_mission_to_queue(guid):
-            return mir_api_actionResponse(1)
-    elif req.action == 2:
-        if robot.read_register(8) == 2:
-            return mir_api_actionResponse(2)
-    elif req.action == 3:
-        robot.write_register(8, 1)  # MIR can go
-        return mir_api_actionResponse(3)
-    elif req.action == 10:
-        if robot.is_mission_executing(guid):
-            #rospy.loginfo("true")
-            return mir_api_actionResponse(10)
-            #rospy.loginfo("nor")
-    elif req.action == 20:
-        return mir_api_actionResponse(robot.read_register(80))
-
-    return mir_api_actionResponse(0)
-
-def mir_api_service():
-    rospy.init_node('mir_api_service')
-    s = rospy.Service('mir_api/service', mir_api_action, handle_GotoGr8)
-    rospy.spin()
-
+#---------------------------------------------------------------------------------------
 
 
 
 
 if __name__ == "__main__":
-    mir_api_service()
+    mir = mir_pubsub()
+    rate = rospy.Rate(10)
+    while not rospy.is_shutdown():
+        mir.is_executing()
+        rate.sleep()
+
+    rospy.spin()
+
 
 '''
 robot = RestMiR()

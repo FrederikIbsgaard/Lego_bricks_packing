@@ -98,10 +98,10 @@ bool gotoConfig(robot_control::goto_config::Request &req, robot_control::goto_co
     ROS_INFO_STREAM("pauseCopy: " << pauseCopy);
 
     //IO message for opening/closing gripper:
-    ur_msgs::SetIO gripper;
-    gripper.request.fun = 1;
-    gripper.request.pin = 4;
-    gripper.request.state = 1.0;
+    // ur_msgs::SetIO gripper;
+    // gripper.request.fun = 1;
+    // gripper.request.pin = 4;
+    // gripper.request.state = 1.0;
 
     //For planning:
     moveit::planning_interface::MoveGroupInterface::Plan my_plan;
@@ -151,37 +151,37 @@ bool gotoConfig(robot_control::goto_config::Request &req, robot_control::goto_co
         ROS_INFO("Finished moving.");
 
         //Check whether to open or close the gripper, depending on the conf.:
-        ROS_INFO("***********************CHECK IF GRIPPER SHOULD CLOSE***********************");
-        if(currentTarget.compare("aboveDiscard") == 0 || currentTarget.compare("aboveBoxA") == 0 || currentTarget.compare("aboveBoxB") == 0)
-        {
-            //Open the gripper:
-            ROS_INFO("Opening the gripper");
-            gripper.request.state = 0.0;
-            if(!gripperPtr->call(gripper))
-            {
-                ROS_ERROR("Failed to contact gripper");
-            }
-        }
-        else if(currentTarget.compare("aboveBoxC") == 0 || currentTarget.compare("aboveBoxD") == 0)
-        {
-            //Open the gripper:
-            ROS_INFO("Opening the gripper");
-            gripper.request.state = 0.0;
-            if(!gripperPtr->call(gripper))
-            {
-                ROS_ERROR("Failed to contact gripper");
-            }
-        }
-        else if(currentTarget.compare("graspSmall") == 0 || currentTarget.compare("graspMedium") == 0 || currentTarget.compare("graspLarge") == 0)
-        {
-            //Close the gripper:
-            ROS_INFO("Closing the gripper");
-            gripper.request.state = 1.0;
-            if(!gripperPtr->call(gripper))
-            {
-                ROS_ERROR("Failed to contact gripper");
-            }
-        }
+        // ROS_INFO("***********************CHECK IF GRIPPER SHOULD CLOSE***********************");
+        // if(currentTarget.compare("aboveDiscard") == 0 || currentTarget.compare("aboveBoxA") == 0 || currentTarget.compare("aboveBoxB") == 0)
+        // {
+            // //Open the gripper:
+            // ROS_INFO("Opening the gripper");
+            // gripper.request.state = 0.0;
+            // if(!gripperPtr->call(gripper))
+            // {
+            //     ROS_ERROR("Failed to contact gripper");
+            // }
+        // }
+        // else if(currentTarget.compare("aboveBoxC") == 0 || currentTarget.compare("aboveBoxD") == 0)
+        // {
+        //     //Open the gripper:
+        //     ROS_INFO("Opening the gripper");
+        //     gripper.request.state = 0.0;
+        //     if(!gripperPtr->call(gripper))
+        //     {
+        //         ROS_ERROR("Failed to contact gripper");
+        //     }
+        // }
+        // else if(currentTarget.compare("graspSmall") == 0 || currentTarget.compare("graspMedium") == 0 || currentTarget.compare("graspLarge") == 0)
+        // {
+        //     //Close the gripper:
+        //     ROS_INFO("Closing the gripper");
+        //     gripper.request.state = 1.0;
+        //     if(!gripperPtr->call(gripper))
+        //     {
+        //         ROS_ERROR("Failed to contact gripper");
+        //     }
+        // }
         
         res.success = true;
         return true;      
@@ -220,34 +220,37 @@ void pauseRobot(const std_msgs::Empty::ConstPtr& msg)
         ROS_ERROR_STREAM("Service call succeeded, but failed to stop robot! Speed: " << 0.01);
     }
 
+    //Test:
+    mgPtr->stop();
+
     //TODO: Sleep here?
 
     //Stop-hack: Plan to current config and execute:
-    moveit::planning_interface::MoveGroupInterface::Plan my_plan;
-    std::vector<double> q;
-    q = mgPtr->getCurrentJointValues();
-    mgPtr->setJointValueTarget(q);
-    if(mgPtr->plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS)
-    {
-        speed.request.speed_slider_fraction = MAX_SPEED;
+    // moveit::planning_interface::MoveGroupInterface::Plan my_plan;
+    // std::vector<double> q;
+    // q = mgPtr->getCurrentJointValues();
+    // mgPtr->setJointValueTarget(q);
+    // if(mgPtr->plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS)
+    // {
+    //     speed.request.speed_slider_fraction = MAX_SPEED;
 
-        if (!pausePtr->call(speed))
-        {
-            ROS_ERROR_STREAM("Failed to stop robot! Speed: " << MAX_SPEED);
-        }
+    //     if (!pausePtr->call(speed))
+    //     {
+    //         ROS_ERROR_STREAM("Failed to stop robot! Speed: " << MAX_SPEED);
+    //     }
 
-        if (!speed.response.success)
-        {
-            ROS_ERROR_STREAM("Service call succeeded, but failed to stop robot! Speed: " << MAX_SPEED);
-        }
+    //     if (!speed.response.success)
+    //     {
+    //         ROS_ERROR_STREAM("Service call succeeded, but failed to stop robot! Speed: " << MAX_SPEED);
+    //     }
 
-        mgPtr->move();
-        ROS_INFO("Robot stopped");
-    }
-    else
-    {
-        ROS_ERROR("Failed to stop robot!");
-    }
+    //     mgPtr->move();
+    //     ROS_INFO("Robot stopped");
+    // }
+    // else
+    // {
+    //     ROS_ERROR("Failed to stop robot!");
+    // }
 }
 
 void playRobot(const std_msgs::Empty::ConstPtr& msg)

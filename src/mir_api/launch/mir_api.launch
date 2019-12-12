@@ -1,3 +1,4 @@
 <launch>
-    <node name="publisher" pkg="mir_api" type="mir_api_service.py" />
+    <node name="mir_publisher" pkg="mir_api" type="mir_api_pubsub.py" />
+    <node name="mir_server" pkg="mir_api" type="mir_api_service.py" />
 </launch>

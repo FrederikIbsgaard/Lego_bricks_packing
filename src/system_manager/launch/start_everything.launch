@@ -1,12 +1,29 @@
 <?xml version="1.0"?>
 <launch>
+    <!-- Start ur_digital_ports -->
+    <include file="$(find ur_digital_ports)/launch/ur_digital_ports.launch"/>
+
     <!-- Start robot-control -->
     <include file="$(find robot_control)/launch/start_everything.launch"/>
 
     <!-- Start vision -->
     <include file="$(find vision)/launch/vision.launch"/>
 
+    <!-- Start MiR -->
+    <!-- <include file="$(find mir_api)/launch/mir_api.launch"/> -->
+    <include file="$(find mir_api)/launch/fake_mir_api.launch"/>
+
+    <!-- Start MES -->
+    <include file="$(find mes_ordering)/launch/mes_ordering.launch"/>
+
+    <!-- Start PackML -->
+    <node name="system_manager_packml" pkg="system_manager" type="system_manager_packml" output="screen"/>
+    
+    <!-- Start GUI -->
+    <include file="$(find gui)/launch/start_gui.launch"/>
+
     <!-- Start system manager-->
-    <node name="system_manager" pkg="system_manager" type="system_manager"/>
+    <arg name="node_start_delay" default="5.0" />
+    <node name="system_manager" pkg="system_manager" type="system_manager_node" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>
 
 </launch>

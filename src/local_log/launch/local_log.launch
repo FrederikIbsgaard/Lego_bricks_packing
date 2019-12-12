@@ -1,4 +1,4 @@
 <launch>
-    <node pkg="local_log" type="local_logger.py" name="local_logger"/>
+    <node pkg="local_log" type="local_logger.py" name="system_logging"/>
 </launch>
 

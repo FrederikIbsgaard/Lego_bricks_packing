@@ -4,8 +4,8 @@
     <!-- ROS Stuff-->
     <meta charset="utf-8" />
 
-    <script type="text/javascript" src="http://static.robotwebtools.org/EventEmitter2/current/eventemitter2.min.js"></script>
-    <script type="text/javascript" src="http://static.robotwebtools.org/roslibjs/current/roslib.min.js"></script>
+    <script type="text/javascript" src="eventemitter2.min.js"></script>
+    <script type="text/javascript" src="roslib.min.js"></script>
 
     <script type="text/javascript" type="text/javascript">
         // Connecting to ROS
@@ -29,11 +29,11 @@
 
         // Play button:
         var playPub = new ROSLIB.Topic(
-            {
+        {
             ros : ros,
             name : '/gui_play',
             messageType : 'std_msgs/Empty'
-            });
+        });
 
         var playMsg = new ROSLIB.Message();
 
@@ -79,15 +79,22 @@
         var resetPub = new ROSLIB.Topic(
             {
             ros : ros,
-            name : '/gui_reset',
-            messageType : 'std_msgs/Empty'
+            name : '/action_state',
+            messageType : 'std_msgs/Int8'
             });
 
-        var resetMsg = new ROSLIB.Message();
+        var resetMsg = new ROSLIB.Message({
+            data : 21 //AC_RESET
+        });
+
+        var resetMsgSC = new ROSLIB.Message({
+            data : 0 //AC_RESET
+        });
 
         function resetBtnPres()
         {
             resetPub.publish(resetMsg);
+            resetPub.publish(resetMsgSC);
             return true;
         }
 
@@ -104,44 +111,61 @@
             return true;
         });
 
-        //Get # blue bricks:
-        var blueNoSub = new ROSLIB.Topic({
+        //Sub to order info:
+        var orderInfoSub = new ROSLIB.Topic({
             ros : ros,
-            name : '/no_of_blue_bricks',
-            messageType : 'std_msgs/Int16'
+            name : '/order_info',
+            messageType : 'mes_ordering/orderInfoMsg'
         });
 
-        blueNoSub.subscribe(function(message)
+        orderInfoSub.subscribe(function(message)
         {
-            document.getElementById("blue_bricks").innerHTML = message.data;
-            return true;
+            console.log("Setting order info!");
+            document.getElementById("blue_bricks").innerHTML = message.blue;
+            document.getElementById("red_bricks").innerHTML = message.red;
+            document.getElementById("yellow_bricks").innerHTML = message.yellow;
+            document.getElementById("order_no").innerHTML = message.id;
+            console.log("Info set!");
         });
+
+        // //Get # blue bricks:
+        // var blueNoSub = new ROSLIB.Topic({
+        //     ros : ros,
+        //     name : '/no_of_blue_bricks',
+        //     messageType : 'std_msgs/Int16'
+        // });
+
+        // blueNoSub.subscribe(function(message)
+        // {
+        //     document.getElementById("blue_bricks").innerHTML = message.data;
+        //     return true;
+        // });
         
-        //Get # red bricks:
-        var redNoSub = new ROSLIB.Topic({
-            ros : ros,
-            name : '/no_of_red_bricks',
-            messageType : 'std_msgs/Int16'
-        });
+        // //Get # red bricks:
+        // var redNoSub = new ROSLIB.Topic({
+        //     ros : ros,
+        //     name : '/no_of_red_bricks',
+        //     messageType : 'std_msgs/Int16'
+        // });
 
-        redNoSub.subscribe(function(message)
-        {
-            document.getElementById("red_bricks").innerHTML = message.data;
-            return true;
-        });
+        // redNoSub.subscribe(function(message)
+        // {
+        //     document.getElementById("red_bricks").innerHTML = message.data;
+        //     return true;
+        // });
 
-        //Get # yellow bricks:
-        var yellowNoSub = new ROSLIB.Topic({
-            ros : ros,
-            name : '/no_of_yellow_bricks',
-            messageType : 'std_msgs/Int16'
-        });
+        // //Get # yellow bricks:
+        // var yellowNoSub = new ROSLIB.Topic({
+        //     ros : ros,
+        //     name : '/no_of_yellow_bricks',
+        //     messageType : 'std_msgs/Int16'
+        // });
 
-        yellowNoSub.subscribe(function(message)
-        {
-            document.getElementById("yellow_bricks").innerHTML = message.data;
-            return true;
-        });
+        // yellowNoSub.subscribe(function(message)
+        // {
+        //     document.getElementById("yellow_bricks").innerHTML = message.data;
+        //     return true;
+        // });
 
         // Get status:
         var statusSub = new ROSLIB.Topic({
@@ -311,7 +335,7 @@
         var feederRefillPub = new ROSLIB.Topic(
         {
             ros : ros,
-            name : '/feeder_refilled',
+            name : '/feeder_refill',
             messageType : 'std_msgs/Empty'
         });
 
@@ -323,6 +347,58 @@
             feederRefillPub.publish(feederRefillMsg);
             return true;
         });
+
+        //OEE:
+        var oeeSub = new ROSLIB.Topic({ //oee
+            ros : ros,
+            name : '/oee',
+            messageType : 'std_msgs/String'
+        });
+
+        oeeSub.subscribe(function(message)
+        {
+            document.getElementById("oee_val").innerHTML = message.data;
+        });
+
+        var oeeAvailSub = new ROSLIB.Topic({ //Availability
+            ros : ros,
+            name : '/oeeAvail',
+            messageType : 'std_msgs/String'
+        });
+
+        oeeAvailSub.subscribe(function(message)
+        {
+            document.getElementById("avail_val").innerHTML = message.data;
+        });
+
+        var oeePerfSub = new ROSLIB.Topic({ //Performance
+            ros : ros,
+            name : '/oeePerf',
+            messageType : 'std_msgs/String'
+        });
+
+        oeePerfSub.subscribe(function(message)
+        {
+            document.getElementById("perf_val").innerHTML = message.data;
+        });
+
+        var oeeQualSub = new ROSLIB.Topic({ //Quality
+            ros : ros,
+            name : '/oeeQual',
+            messageType : 'std_msgs/String'
+        });
+
+        oeeQualSub.subscribe(function(message)
+        {
+            document.getElementById("qual_val").innerHTML = message.data;
+        });
+
+        function refillBtnPres()
+        {
+            alert("Please ensure that all feeders are filled.");
+            feederRefillPub.publish(feederRefillMsg);
+        }
+
     </script>
     
     <link rel="stylesheet" type="text/css" href="stylesheet.css">
@@ -549,6 +625,7 @@
                         <button id="pause_btn" onclick="pauseBtnPres()"><img src="../icons/pause-circle-solid.svg" onmouseover="this.src='../icons/pause_hover.svg';" onmouseout="this.src='../icons/pause-circle-solid.svg';"/></button>
                         <button id="stop_btn" onclick="stopBtnPres()"><img src="../icons/stop-circle-solid.svg" onmouseover="this.src='../icons/stop_hover.svg';" onmouseout="this.src='../icons/stop-circle-solid.svg';"/></button>
                         <button id="reset_btn" onclick="resetBtnPres()""><img src="../icons/reset-solid.svg"/></button>
+                        <button id="refill_btn" onclick="refillBtnPres()""><img src="../icons/RF.svg" onmouseover="this.src='../icons/RF_hover.svg';" onmouseout="this.src='../icons/RF.svg';"/></button>
             </div>
             <div id="current_order_container">
                 <p class="order_stats_text">Current order #:</p><p id="order_no" class="order_stats_value">----</p></br></br></br>
