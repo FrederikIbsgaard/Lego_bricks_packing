@@ -1,3 +1,3 @@
 <launch>
-    <node name="vision_publisher" pkg="vision" type="listener.py" />
+    <node name="vision_publisher" pkg="vision" type="listener.py" output="screen"/>
 </launch>
