@@ -87,7 +87,8 @@ void lightT(int redS, int amberS, int greenS){
 	rtde_io.setStandardDigitalOut(GREEN_PORT, greenS);
 }
 
-void bottonLight(const std_msgs::Int8::ConstPtr& msg){
+void bottonLight(const std_msgs::Int8::ConstPtr& msg)
+{
 	int msgs = msg->data;
 	if (msgs == 1){
 		bottonAction = 1;
@@ -104,7 +105,7 @@ int main(int argc, char **argv){
 	ros::init(argc, argv, "lightTower_server");
 	ros::NodeHandle n;
 
-	ros::Subscriber subButton = n.subscribe("set_botton_light", 10, bottonLight);
+	ros::Subscriber subButton = n.subscribe("set_button_light", 10, bottonLight);
 	ros::Subscriber sub = n.subscribe("packml_state", 10, pmlState);
 	ros::ServiceServer service = n.advertiseService("digital_output", portControl);
 	ROS_INFO("Ready to use digital output.");
@@ -168,7 +169,7 @@ int main(int argc, char **argv){
 		lightT(redCurState, amberCurState, greenCurState);
 
 		if (bottonAction == 1){
-			bottonCurState != bottonCurState;
+			bottonCurState = !bottonCurState;
 		}
 		else{
 			bottonCurState = false;
