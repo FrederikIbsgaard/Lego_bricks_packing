@@ -111,10 +111,10 @@ def callback(data):
         OEE = Availability * Performance * Quality
 
         # Publish information
-        pub_avail.publish(Availability)
-        pub_perf.publish(Performance)
-        pub_qual.publish(Quality)
-        pub_oee.publish(OEE)
+        pub_avail.publish(str(Availability))
+        pub_perf.publish(str(Performance))
+        pub_qual.publish(str(Quality))
+        pub_oee.publish(str(OEE))
         pub_log.publish("INFO", "OEE_Calc", "Avail: " + str(Availability) +
                         " Perf: " + str(Performance) +
                         " Qual: " + str(Quality) + " OEE: " + str(OEE))
