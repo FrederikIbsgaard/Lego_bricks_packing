@@ -146,6 +146,7 @@ include_directories(
 ## ROBOTICS executables:
 add_executable(${PROJECT_NAME}_node src/system_manager.cpp)
 add_executable(${PROJECT_NAME}_packml src/state.cpp)
+add_executable(discard_test src/discard_test.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -161,6 +162,7 @@ add_dependencies(${PROJECT_NAME}_packml system_manager_generate_messages_cpp)
 ## ROBOTICS executables:
 target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES})
 target_link_libraries(${PROJECT_NAME}_packml ${catkin_LIBRARIES})
+target_link_libraries(discard_test ${catkin_LIBRARIES})
 #############
 ## Install ##
 #############
