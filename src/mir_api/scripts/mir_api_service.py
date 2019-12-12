@@ -4,7 +4,7 @@ from mir_api.srv import mir_api_action, mir_api_actionResponse
 import requests
 import time
 import rospy
-
+import numpy as np
 
 language = {'Accept-Language': "en_US"}
 
@@ -43,6 +43,18 @@ class RestMiR():
             return False
         return True
 
+    def is_mission_executing(self, mission):
+        r = requests.get(self.HOST + 'mission_queue', headers=self.authorization)
+        data = {"mission_id": str(mission["guid"])}
+        for i in[-1,-2,-3,-4]:
+            #print(data['mission_id'])
+            _id = requests.get(self.HOST + 'mission_queue/'+str(r.json()[i]['id']), headers=self.authorization)
+            #print(_id.json()['mission_id'])
+            if data['mission_id'] == _id.json()['mission_id']:
+                if r.json()[i]['state'] == 'Executing':
+                    return True
+        return False
+
     #In the mission we will have to set coils (plc registers) in order to get information if robot has docked and etc.
     def read_register(self, register_id):
         response = requests.get(self.HOST + 'registers/' + str(register_id), headers=self.authorization)
@@ -67,10 +79,11 @@ class RestMiR():
 
 
 robot = RestMiR()
+guid = robot.get_mission("GoToGr8")
 
 def handle_GotoGr8(req):
     if req.action == 1:
-        guid = robot.get_mission("GoToGr8")
+        #guid = robot.get_mission("GoToGr8")
         if robot.add_mission_to_queue(guid):
             return mir_api_actionResponse(1)
     elif req.action == 2:
@@ -79,14 +92,23 @@ def handle_GotoGr8(req):
     elif req.action == 3:
         robot.write_register(8, 1)  # MIR can go
         return mir_api_actionResponse(3)
+    elif req.action == 10:
+        if robot.is_mission_executing(guid):
+            #rospy.loginfo("true")
+            return mir_api_actionResponse(10)
+        else:
+            #rospy.loginfo("nor")
 
     return mir_api_actionResponse(0)
 
 def mir_api_service():
     rospy.init_node('mir_api_service')
     s = rospy.Service('mir_api/service', mir_api_action, handle_GotoGr8)
-    print "Ready The MiR"
     rospy.spin()
+
+
+
+
 
 if __name__ == "__main__":
     mir_api_service()

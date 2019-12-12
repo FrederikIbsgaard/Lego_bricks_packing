@@ -45,6 +45,17 @@ class RestMiR():
             return False
         return True
 
+    def is_mission_executing(self, mission):
+        r = requests.get(self.HOST + 'mission_queue', headers=self.authorization)
+        data = {"mission_id": str(mission["guid"])}
+        for i in[-1,-2,-3,-4]:
+            #print(data['mission_id'])
+            _id = requests.get(self.HOST + 'mission_queue/'+str(r.json()[i]['id']), headers=self.authorization)
+            #print(_id.json()['mission_id'])
+            if data['mission_id'] == _id.json()['mission_id']:
+                if r.json()[i]['state'] == 'Executing':
+                    return True
+        return False
     #In the mission we will have to set coils (plc registers) in order to get information if robot has docked and etc.
     def read_register(self, register_id):
         response = requests.get(self.HOST + 'registers/' + str(register_id), headers=self.authorization)
@@ -73,11 +84,11 @@ class mir_pubsub():
         rospy.init_node('mir_api_pubSub', anonymous=True)
         self.pub = rospy.Publisher('mir_api/pub', Int8, queue_size=10)
         rospy.Subscriber('mir_api/sub', Int8, self.callback_call_mir)
+        self.guid = self.robot.get_mission("GoToGr8")
 
     def callback_call_mir(self, data):
         if data.data == 1:
-            guid = self.robot.get_mission("GoToGr8")
-            if self.robot.add_mission_to_queue(guid):
+            if self.robot.add_mission_to_queue(self.guid):
                 self.pub.publish(1)
             else:
                 self.pub.publish(0)
@@ -93,10 +104,22 @@ class mir_pubsub():
             self.pub.publish(0)
         return 1
 
+    def is_executing(self):
+        if self.robot.is_mission_executing(self.guid):
+            self.pub.publish(10)
+
 #---------------------------------------------------------------------------------------
+
+
+
 
 if __name__ == "__main__":
     mir = mir_pubsub()
+    rate = rospy.Rate(10)
+    while not rospy.is_shutdown():
+        mir.is_executing()
+        rate.sleep()
+
     rospy.spin()
 
 
