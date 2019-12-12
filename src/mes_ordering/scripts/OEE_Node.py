@@ -88,8 +88,8 @@ def callback(data):
         # total # of bricks touched
         msgData = str(msgs).split(",")
 
-        print msgData[1], msgData[2], msgData[3]
-        print int(msgData[1]), int(msgData[2]), int(msgData[3])
+        # print msgData[1], msgData[2], msgData[3]
+        # print int(msgData[1]), int(msgData[2]), int(msgData[3])
 
         # Calculate the availablity
         Availability = calc_Availability(x1.runTime, x1.downTime)
