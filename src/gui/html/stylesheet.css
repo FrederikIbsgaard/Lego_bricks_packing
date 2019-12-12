@@ -43,13 +43,14 @@ button
 {
     transform: translateY(100%) translateX(-30%);
     height: 60px;
-    width: 300px;
+    width: 400px;
     float: left;
 }
 
 #reset_btn
 {
     float: left;
+    margin-right: 40px;
 }
 
 #play_btn
@@ -63,6 +64,11 @@ button
 }
 
 #stop_btn
+{
+    float: left;
+}
+
+#refill_btn
 {
     float: left;
 }
