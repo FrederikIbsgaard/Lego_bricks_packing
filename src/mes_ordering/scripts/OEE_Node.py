@@ -88,8 +88,8 @@ def callback(data):
         # total # of bricks touched
         msgData = str(msgs).split(",")
 
-        print msgData[1], msgData[2], msgData[3]
-        print int(msgData[1]), int(msgData[2]), int(msgData[3])
+        # print msgData[1], msgData[2], msgData[3]
+        # print int(msgData[1]), int(msgData[2]), int(msgData[3])
 
         # Calculate the availablity
         Availability = calc_Availability(x1.runTime, x1.downTime)
@@ -111,10 +111,10 @@ def callback(data):
         OEE = Availability * Performance * Quality
 
         # Publish information
-        pub_avail.publish(Availability)
-        pub_perf.publish(Performance)
-        pub_qual.publish(Quality)
-        pub_oee.publish(OEE)
+        pub_avail.publish(str(Availability)[0:5])
+        pub_perf.publish(str(Performance)[0:5])
+        pub_qual.publish(str(Quality)[0:5])
+        pub_oee.publish(str(OEE)[0:5])
         pub_log.publish("INFO", "OEE_Calc", "Avail: " + str(Availability) +
                         " Perf: " + str(Performance) +
                         " Qual: " + str(Quality) + " OEE: " + str(OEE))

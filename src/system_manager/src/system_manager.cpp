@@ -56,6 +56,7 @@ int bricksDiscarded;
 
 //Order info:
 int currentOrderContents[4][3]; //blue, red, yellow
+int currentOrderContentsOrg[4][3]; //blue, red, yellow
 bool boxContainsOrder[4] = {false, false, false, false};
 int currentOrderIds[4];
 string currentOrderTickets[4];
@@ -257,7 +258,8 @@ int main(int argc, char** argv)
                     feederEstCopy[RED_BRICKS] = feederEstimates[RED_BRICKS];
                     feederEstCopy[YELLOW_BRICKS] = feederEstimates[YELLOW_BRICKS];
                     feederLock.unlock();
-                } while (feederEstimates[BLUE_BRICKS] != FEEDER_MAX && feederEstimates[RED_BRICKS] == FEEDER_MAX && feederEstimates[YELLOW_BRICKS] == FEEDER_MAX);
+                    ros::Duration(0.5).sleep();
+                } while (feederEstimates[BLUE_BRICKS] != FEEDER_MAX || feederEstimates[RED_BRICKS] != FEEDER_MAX || feederEstimates[YELLOW_BRICKS] != FEEDER_MAX);
 
                 //Go to "UNHOLDING":
                 packmlAction.data = AC_UNHOLD;
@@ -289,6 +291,11 @@ int main(int argc, char** argv)
         {
             ROS_INFO("Asking MES system for next order...");
             getOrderFromMes(currentOrderIds[currentOrderIdx], currentOrderContents[currentOrderIdx][BLUE_BRICKS], currentOrderContents[currentOrderIdx][RED_BRICKS], currentOrderContents[currentOrderIdx][YELLOW_BRICKS], currentOrderTickets[currentOrderIdx]);
+
+            //Save original order contents:
+            currentOrderContentsOrg[currentOrderIdx][BLUE_BRICKS] = currentOrderContents[currentOrderIdx][BLUE_BRICKS];
+            currentOrderContentsOrg[currentOrderIdx][RED_BRICKS] = currentOrderContents[currentOrderIdx][RED_BRICKS];
+            currentOrderContentsOrg[currentOrderIdx][YELLOW_BRICKS] = currentOrderContents[currentOrderIdx][YELLOW_BRICKS];
 
             ROS_INFO_STREAM("Got order no. " << currentOrderIds[currentOrderIdx]);
             ROS_INFO_STREAM("Ticket: " << currentOrderTickets[currentOrderIdx]);
@@ -421,6 +428,13 @@ int main(int argc, char** argv)
                     return -1;
                 }
 
+                stopLock.lock();
+                stopCopy = isStopped;
+                stopLock.unlock();
+
+                if(stopCopy)
+                    continue;
+
                 while(mir.response.result == 0)
                 {
                     ros::Duration(1).sleep();
@@ -435,7 +449,7 @@ int main(int argc, char** argv)
                 ROS_INFO("MiR has arrived!");
 
                 //Go to "UNSUSPENDING":
-                packmlAction.data = AC_SUSPEND;
+                packmlAction.data = AC_UNSUSPENDED;
                 packmlPub.publish(packmlAction);
 
                 //Go to "EXECUTE":
@@ -444,6 +458,12 @@ int main(int argc, char** argv)
 
                 //Move packed orders onto MiR:
                 ROS_INFO("Placing order on MiR!");
+                stopLock.lock();
+                stopCopy = isStopped;
+                stopLock.unlock();
+
+                if(stopCopy)
+                    continue;
                 loadAndRunUrProgram("rsd_mir_place.urp");
 
                 //Delete all orders:
@@ -477,17 +497,20 @@ int main(int argc, char** argv)
                 //OEE:
                 int totalBrickInOrders = 0;
                 for(int i = 0; i < 4; i ++)
-                    totalBrickInOrders += currentOrderContents[i][BLUE_BRICKS] + currentOrderContents[i][RED_BRICKS] + currentOrderContents[i][YELLOW_BRICKS];
+                    totalBrickInOrders += currentOrderContentsOrg[i][BLUE_BRICKS] + currentOrderContentsOrg[i][RED_BRICKS] + currentOrderContentsOrg[i][YELLOW_BRICKS];
 
                 int totalBricksHandled = totalBrickInOrders + bricksDiscarded;
                 
                 std_msgs::String s;
-                s.data = "done" + to_string(currentOrderIdx) + ";" + to_string(totalBrickInOrders) + ";" + to_string(totalBricksHandled);
+                s.data = "done," + to_string(currentOrderIdx) + "," + to_string(totalBrickInOrders) + "," + to_string(totalBricksHandled);
                 oeePub.publish(s);
                 
 
                 ROS_INFO("Deleted all four orders!");
                 bricksDiscarded = 0;
+                currentOrderIdx = 0;
+                currentBox = 0;
+
             }
         }
     }
@@ -497,11 +520,13 @@ int main(int argc, char** argv)
 
 void feederRefill(const std_msgs::Empty::ConstPtr& msg)
 {
+    ROS_INFO("Getting feeder lock");
     feederLock.lock();
     feederEstimates[0] = FEEDER_MAX;
     feederEstimates[1] = FEEDER_MAX;
     feederEstimates[2] = FEEDER_MAX;
     feederLock.unlock();
+    ROS_INFO("Feeder refilled!");
 }
 
 bool loadAndRunUrProgram(string filename)
@@ -668,6 +693,14 @@ void stopSystem(const std_msgs::Empty::ConstPtr& msg)
     std_msgs::String s;
     s.data = "STOP";
     oeePub.publish(s);
+
+    //PackMl:
+    std_msgs::Int8 i;
+    i.data = 20; //AC_STOP
+    packmlPub.publish(i);
+
+    i.data = 0; //AC_SC
+    packmlPub.publish(i);    
 }
 
 /**
@@ -782,6 +815,7 @@ void pack(int color, int amount, int box)
             
             default:
                 ROS_ERROR("Invalid box was selected. Program error, please debug.");
+                throw("Invalid box was selected. Program error, please debug");
                 return;
             }
 
@@ -809,12 +843,6 @@ void pack(int color, int amount, int box)
             {
                 currentOrderContents[currentOrderIdx][color]--; //One less brick to pack :)
                 //Open the gripper:
-                stopLock.lock();
-                stopCopy = isStopped;
-                stopLock.unlock();
-
-                if(stopCopy)
-                    return;
                 ROS_INFO("Opening the gripper");
                 gripper.request.state = 0.0;
                 if(!urIoClient.call(gripper))
@@ -822,6 +850,13 @@ void pack(int color, int amount, int box)
                     ROS_ERROR("Failed to contact gripper");
                     return;
                 }
+
+                stopLock.lock();
+                stopCopy = isStopped;
+                stopLock.unlock();
+
+                if(stopCopy)
+                    return;      
             }
             else
             {
