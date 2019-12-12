@@ -335,7 +335,7 @@
         var feederRefillPub = new ROSLIB.Topic(
         {
             ros : ros,
-            name : '/feeder_refilled',
+            name : '/feeder_refill',
             messageType : 'std_msgs/Empty'
         });
 
@@ -347,6 +347,58 @@
             feederRefillPub.publish(feederRefillMsg);
             return true;
         });
+
+        //OEE:
+        var oeeSub = new ROSLIB.Topic({ //oee
+            ros : ros,
+            name : '/oee',
+            messageType : 'std_msgs/String'
+        });
+
+        oeeSub.subscribe(function(message)
+        {
+            document.getElementById("oee_val").innerHTML = message.data;
+        });
+
+        var oeeAvailSub = new ROSLIB.Topic({ //Availability
+            ros : ros,
+            name : '/oeeAvail',
+            messageType : 'std_msgs/String'
+        });
+
+        oeeAvailSub.subscribe(function(message)
+        {
+            document.getElementById("avail_val").innerHTML = message.data;
+        });
+
+        var oeePerfSub = new ROSLIB.Topic({ //Performance
+            ros : ros,
+            name : '/oeePerf',
+            messageType : 'std_msgs/String'
+        });
+
+        oeePerfSub.subscribe(function(message)
+        {
+            document.getElementById("perf_val").innerHTML = message.data;
+        });
+
+        var oeeQualSub = new ROSLIB.Topic({ //Quality
+            ros : ros,
+            name : '/oeeQual',
+            messageType : 'std_msgs/String'
+        });
+
+        oeeQualSub.subscribe(function(message)
+        {
+            document.getElementById("qual_val").innerHTML = message.data;
+        });
+
+        function refillBtnPres()
+        {
+            alert("Please ensure that all feeders are filled.");
+            feederRefillPub.publish(feederRefillMsg);
+        }
+
     </script>
     
     <link rel="stylesheet" type="text/css" href="stylesheet.css">
@@ -573,6 +625,7 @@
                         <button id="pause_btn" onclick="pauseBtnPres()"><img src="../icons/pause-circle-solid.svg" onmouseover="this.src='../icons/pause_hover.svg';" onmouseout="this.src='../icons/pause-circle-solid.svg';"/></button>
                         <button id="stop_btn" onclick="stopBtnPres()"><img src="../icons/stop-circle-solid.svg" onmouseover="this.src='../icons/stop_hover.svg';" onmouseout="this.src='../icons/stop-circle-solid.svg';"/></button>
                         <button id="reset_btn" onclick="resetBtnPres()""><img src="../icons/reset-solid.svg"/></button>
+                        <button id="refill_btn" onclick="refillBtnPres()""><img src="../icons/RF.svg" onmouseover="this.src='../icons/RF_hover.svg';" onmouseout="this.src='../icons/RF.svg';"/></button>
             </div>
             <div id="current_order_container">
                 <p class="order_stats_text">Current order #:</p><p id="order_no" class="order_stats_value">----</p></br></br></br>
