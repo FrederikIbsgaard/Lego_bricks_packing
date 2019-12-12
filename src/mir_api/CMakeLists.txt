@@ -3,6 +3,7 @@ project(mir_api)
 
 find_package(catkin REQUIRED COMPONENTS
   rospy
+  roscpp
   std_msgs
   message_generation
 )
@@ -25,3 +26,7 @@ generate_messages(
 catkin_package(
    CATKIN_DEPENDS message_runtime
 )
+
+add_executable(fake_mir src/fakeMir.cpp)
+
+target_link_libraries(fake_mir ${catkin_LIBRARIES})
