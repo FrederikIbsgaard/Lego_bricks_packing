@@ -28,43 +28,44 @@ error_msg.type = "ERROR"
 error_msg.node_id = "Vision node"
 
 def run_sync_client(modbus_client,request):
-    
-    try:
-        # Read the registers
-        rr = modbus_client.read_holding_registers(address=utilities_modbus.ADDRESS, count=3, unit=utilities_modbus.UNIT) 
-        if(rr.registers[0] == utilities_modbus.GET_BRICK_COLOR_WAIT):
+    for i in range(0,5):
+        try:
+            # Read the registers
+            rr = modbus_client.read_holding_registers(address=utilities_modbus.ADDRESS, count=3, unit=utilities_modbus.UNIT) 
+            if(rr.registers[0] == utilities_modbus.GET_BRICK_COLOR_WAIT):
 
-            info_msg.desc="Server is ready (waiting for order)"
-            pub.publish(info_msg)
-            if(rr.registers[1] == utilities_modbus.RESULT_WAIT):
-                
-                info_msg.desc="Server is ready (result slot available)"
+                info_msg.desc="Server is ready (waiting for order)"
                 pub.publish(info_msg)
-                if(request == utilities_modbus.GET_BRICK_COLOR_BLUE):
-                    if sendRequest(modbus_client,request):
-                        return checkResult(modbus_client,request)  
-                        
-                elif(request == utilities_modbus.GET_BRICK_COLOR_RED):
-                    if sendRequest(modbus_client,request):
-                        return checkResult(modbus_client,request)    
+                if(rr.registers[1] == utilities_modbus.RESULT_WAIT):
+                    
+                    info_msg.desc="Server is ready (result slot available)"
+                    pub.publish(info_msg)
+                    if(request == utilities_modbus.GET_BRICK_COLOR_BLUE):
+                        if sendRequest(modbus_client,request):
+                            return checkResult(modbus_client,request)  
+                            
+                    elif(request == utilities_modbus.GET_BRICK_COLOR_RED):
+                        if sendRequest(modbus_client,request):
+                            return checkResult(modbus_client,request)    
 
-                elif(request == utilities_modbus.GET_BRICK_COLOR_YELLOW):
-                    if sendRequest(modbus_client,request):
-                        return checkResult(modbus_client,request)  
+                    elif(request == utilities_modbus.GET_BRICK_COLOR_YELLOW):
+                        if sendRequest(modbus_client,request):
+                            return checkResult(modbus_client,request)  
+                    else:
+                        error_msg.desc="Invalid color request."
+                        pub.publish(error_msg)
                 else:
-                    error_msg.desc="Invalid color request."
-                    pub.publish(error_msg)
+                    info_msg.desc="Server is busy (result slot available)"
+                    pub.publish(info_msg)
             else:
-                info_msg.desc="Server is busy (result slot available)"
-                pub.publish(info_msg)
-        else:
-            info_msg.desc="Server is busy (computing order)"
-            pub.publish(info_msg)        
-       
-    except:
-        error_msg.desc="Modbus server not available, please reboot the raspberry pi."
-        pub.publish(error_msg)
-        return -1
+                info_msg.desc="Server is busy (computing order)"
+                pub.publish(info_msg)        
+        
+        except:
+            error_msg.desc="Modbus server not available, rebooting the raspberry pi. Sleeping for 10 sec"
+            pub.publish(error_msg)
+            time.sleep(10)
+    return -1
     
 
 def handle_check_brick(req):
