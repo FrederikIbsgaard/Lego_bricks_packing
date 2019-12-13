@@ -123,10 +123,10 @@ class mir_pubsub():
 
 if __name__ == "__main__":
     mir = mir_pubsub()
-    rate = rospy.Rate(10)
-    while not rospy.is_shutdown():
-        mir.is_executing()
-        rate.sleep()
+    #rate = rospy.Rate(10)
+    #while not rospy.is_shutdown():
+    #    mir.is_executing()
+    #    rate.sleep()
 
     rospy.spin()
 

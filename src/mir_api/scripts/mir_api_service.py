@@ -5,6 +5,7 @@ import requests
 import time
 import rospy
 import numpy as np
+import json
 
 language = {'Accept-Language': "en_US"}
 
@@ -80,7 +81,6 @@ class RestMiR():
 
 robot = RestMiR()
 guid = robot.get_mission("GoToGr8")
-
 def handle_GotoGr8(req):
     if req.action == 1:
         #guid = robot.get_mission("GoToGr8")
