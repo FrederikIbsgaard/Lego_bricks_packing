@@ -5,6 +5,7 @@ from std_msgs.msg import Int8
 import requests
 import time
 import rospy
+import json
 
 
 language = {'Accept-Language': "en_US"}
@@ -29,16 +30,18 @@ class RestMiR():
         return mission
 
     def add_mission_to_queue(self, mission):
-        r = requests.get(self.HOST + 'mission_queue', headers=self.authorization)
+        data = {"filters" : [{"fieldname": "state", "operator": "IN", "value": ["Pending", "Executing"]}]}
+        r = requests.post(self.HOST + 'mission_queue/search', json=data, headers=self.authorization)
         data = {"mission_id": str(mission["guid"])}
-        for i in[-1,-2,-3,-4]:
-            #print(data['mission_id'])
-            _id = requests.get(self.HOST + 'mission_queue/'+str(r.json()[i]['id']), headers=self.authorization)
-            #print(_id.json()['mission_id'])
-            if data['mission_id'] == _id.json()['mission_id']:
-                if r.json()[i]['state'] == 'Pending' or  r.json()[i]['state'] == 'Executing':
-                    print("ERROR" + " Already Pending or Executing")
-                    return 0
+        if  len(r.json()) > 0:
+            for i in range(0, len(r.json())):
+                #print(data['mission_id'])
+                _id = requests.get(self.HOST + 'mission_queue/'+str(r.json()[i]['id']), headers=self.authorization)
+                #print(_id.json()['mission_id'])
+                if data['mission_id'] == _id.json()['mission_id']:
+                    if r.json()[i]['state'] == 'Pending' or  r.json()[i]['state'] == 'Executing':
+                        print("ERROR" + " Already Pending or Executing")
+                        return 0
         response = requests.post(self.HOST + "mission_queue", json=data, headers=self.authorization)
         if response.status_code != 201:
             print("ERROR" + str(response.status_code))
@@ -46,15 +49,17 @@ class RestMiR():
         return True
 
     def is_mission_executing(self, mission):
-        r = requests.get(self.HOST + 'mission_queue', headers=self.authorization)
+        data = {"filters" : [{"fieldname": "state", "operator": "IN", "value": ["Pending", "Executing"]}]}
+        r = requests.post(self.HOST + 'mission_queue/search', json=data, headers=self.authorization)
         data = {"mission_id": str(mission["guid"])}
-        for i in[-1,-2,-3,-4]:
-            #print(data['mission_id'])
-            _id = requests.get(self.HOST + 'mission_queue/'+str(r.json()[i]['id']), headers=self.authorization)
-            #print(_id.json()['mission_id'])
-            if data['mission_id'] == _id.json()['mission_id']:
-                if r.json()[i]['state'] == 'Executing':
-                    return True
+        if  len(r.json()) > 0:
+            for i in range(0, len(r.json())):
+                #print(data['mission_id'])
+                _id = requests.get(self.HOST + 'mission_queue/'+str(r.json()[i]['id']), headers=self.authorization)
+                #print(_id.json()['mission_id'])
+                if data['mission_id'] == _id.json()['mission_id']:
+                    if r.json()[i]['state'] == 'Executing':
+                        return True
         return False
     #In the mission we will have to set coils (plc registers) in order to get information if robot has docked and etc.
     def read_register(self, register_id):
@@ -123,10 +128,10 @@ class mir_pubsub():
 
 if __name__ == "__main__":
     mir = mir_pubsub()
-    #rate = rospy.Rate(10)
-    #while not rospy.is_shutdown():
-    #    mir.is_executing()
-    #    rate.sleep()
+    rate = rospy.Rate(10)
+    while not rospy.is_shutdown():
+        mir.is_executing()
+        rate.sleep()
 
     rospy.spin()
 
